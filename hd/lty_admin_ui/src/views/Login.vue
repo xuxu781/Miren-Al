@@ -19,12 +19,13 @@
             <h3>账号登录</h3>
             <p>请输入您的用户名和密码</p>
           </div>
-          <el-form :model="form" label-position="top" size="large" class="login-form">
+          <el-form :model="form" label-position="top" size="large" class="login-form" autocomplete="off">
             <el-form-item>
               <el-input 
                 v-model="form.username" 
                 placeholder="用户名" 
                 :prefix-icon="User"
+                autocomplete="off"
               />
             </el-form-item>
             <el-form-item>
@@ -35,10 +36,11 @@
                 :prefix-icon="Lock"
                 show-password 
                 @keyup.enter="handleLogin"
+                autocomplete="new-password"
               />
             </el-form-item>
             <div class="form-options">
-              <el-checkbox v-model="form.remember">记住密码</el-checkbox>
+              <el-checkbox v-model="form.remember" @change="handleRememberChange">记住密码</el-checkbox>
               <el-link type="primary" :underline="false">忘记密码？</el-link>
             </div>
             <el-form-item>
@@ -100,7 +102,25 @@ const fetchSettings = async () => {
 
 onMounted(() => {
   fetchSettings()
+  const savedUsername = localStorage.getItem('admin_remembered_username')
+  const savedPassword = localStorage.getItem('admin_remembered_password')
+  if (savedUsername && savedPassword) {
+    form.username = savedUsername
+    form.password = savedPassword
+    form.remember = true
+  } else {
+    form.username = ''
+    form.password = ''
+    form.remember = false
+  }
 })
+
+const handleRememberChange = (val: boolean) => {
+  if (!val) {
+    localStorage.removeItem('admin_remembered_username')
+    localStorage.removeItem('admin_remembered_password')
+  }
+}
 
 const handleLogin = async () => {
   if (!form.username || !form.password) {
@@ -123,6 +143,15 @@ const handleLogin = async () => {
     if (res.ok) {
       ElMessage.success('登录成功')
       localStorage.setItem('token', data.token)
+      
+      if (form.remember) {
+        localStorage.setItem('admin_remembered_username', form.username)
+        localStorage.setItem('admin_remembered_password', form.password)
+      } else {
+        localStorage.removeItem('admin_remembered_username')
+        localStorage.removeItem('admin_remembered_password')
+      }
+      
       router.push('/dashboard')
     } else {
       ElMessage.error(data.error || '登录失败')

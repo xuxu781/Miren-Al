@@ -24,12 +24,13 @@
           <p>{{ isLogin ? '登录以继续使用 AI 生图' : '注册以开启您的创作之旅' }}</p>
         </div>
         
-        <el-form :model="form" label-position="top" size="large" class="login-form">
+        <el-form :model="form" label-position="top" size="large" class="login-form" autocomplete="off">
           <el-form-item>
             <el-input 
               v-model="form.email" 
               placeholder="请输入邮箱" 
               :prefix-icon="Message"
+              autocomplete="off"
             />
           </el-form-item>
           <el-form-item>
@@ -40,11 +41,12 @@
               :prefix-icon="Lock"
               show-password 
               @keyup.enter="handleSubmit"
+              autocomplete="new-password"
             />
           </el-form-item>
           
           <div class="form-options" v-if="isLogin">
-            <el-checkbox v-model="form.remember">自动登录</el-checkbox>
+            <el-checkbox v-model="form.remember" @change="handleRememberChange">记住密码</el-checkbox>
             <el-link type="primary" :underline="false">忘记密码</el-link>
           </div>
           
@@ -67,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Lock, Message, Close, MagicStick } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -102,20 +104,61 @@ const fetchSettings = async () => {
   }
 }
 
-onMounted(() => {
-  fetchSettings()
-})
-
 const form = reactive({
   email: '',
   password: '',
   remember: false
 })
 
+onMounted(() => {
+  fetchSettings()
+  initForm()
+})
+
+watch(() => authStore.showLoginModal, (newVal) => {
+  if (newVal) {
+    initForm()
+    isLogin.value = true
+  }
+})
+
+const initForm = () => {
+  const savedEmail = localStorage.getItem('remembered_email')
+  const savedPassword = localStorage.getItem('remembered_password')
+  if (savedEmail && savedPassword) {
+    form.email = savedEmail
+    form.password = savedPassword
+    form.remember = true
+  } else {
+    form.email = ''
+    form.password = ''
+    form.remember = false
+  }
+}
+
 const toggleMode = () => {
   isLogin.value = !isLogin.value
-  form.password = ''
-  form.email = ''
+  if (isLogin.value && form.remember) {
+    const savedEmail = localStorage.getItem('remembered_email')
+    const savedPassword = localStorage.getItem('remembered_password')
+    if (savedEmail && savedPassword) {
+      form.email = savedEmail
+      form.password = savedPassword
+    } else {
+      form.password = ''
+      form.email = ''
+    }
+  } else {
+    form.password = ''
+    form.email = ''
+  }
+}
+
+const handleRememberChange = (val: boolean) => {
+  if (!val) {
+    localStorage.removeItem('remembered_email')
+    localStorage.removeItem('remembered_password')
+  }
 }
 
 const handleSubmit = async () => {
@@ -136,6 +179,14 @@ const handleSubmit = async () => {
       ElMessage.success('登录成功')
       authStore.setToken(res.data.token)
       authStore.setUserInfo(res.data.user)
+      
+      if (form.remember) {
+        localStorage.setItem('remembered_email', form.email)
+        localStorage.setItem('remembered_password', form.password)
+      } else {
+        localStorage.removeItem('remembered_email')
+        localStorage.removeItem('remembered_password')
+      }
       
       authStore.closeLogin()
       
