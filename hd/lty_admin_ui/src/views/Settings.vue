@@ -513,7 +513,7 @@ const handleSaveImage = async () => {
       saving.value = true
       try {
         await saveSetting('image_domain', settingsForm.value.image_domain, '图片域名')
-        await saveSetting('enable_reference_image', settingsForm.value.enable_reference_image ? 'true' : 'false', '是否开启参考图')
+        await saveSetting('enable_reference_image', settingsForm.value.enable_reference_image ? 'true' : 'false', '参考图传参模式')
         await saveSetting('enable_auto_clean_images', settingsForm.value.enable_auto_clean_images ? 'true' : 'false', '是否开启自动清理历史图片')
         await saveSetting('auto_clean_images_time', String(settingsForm.value.auto_clean_images_time), '清理历史图片策略时长')
         await saveSetting('auto_clean_images_unit', settingsForm.value.auto_clean_images_unit, '清理历史图片策略单位')

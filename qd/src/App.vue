@@ -37,5 +37,13 @@ html, body {
   overflow: hidden !important;
   width: 100vw !important;
   height: 100vh !important;
+  background-color: #f9fafb; /* 兜底：任何情况下底部露出的是页面灰而不是 body 默认白 */
+}
+
+/* dvh 行单独用 html body 选择器： specificity 更高可覆盖上面的 100vh；
+   旧内核（微信X5/旧WebView）不支持 dvh 会丢弃本行、回退 100vh，高度链不断裂。
+   不要合并进上面的规则——构建时重复声明会被压缩工具删掉前面的兜底行 */
+html body {
+  height: 100dvh !important;
 }
 </style>

@@ -5,11 +5,13 @@ import (
 )
 
 type Inspiration struct {
-	ID           uint      `json:"id"`
-	Content      string    `json:"content"`
-	ImageURL     string    `json:"image_url"`
-	MainCategory string    `json:"main_category"`
-	SubCategory  string    `json:"sub_category"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                 uint      `json:"id"`
+	Content            string    `json:"content"`
+	ImageURL           string    `json:"image_url"`
+	MainCategory       string    `json:"main_category"`
+	SubCategory        string    `json:"sub_category"`
+	NeedReferenceImage bool      `json:"need_reference_image"`
+	IsActive           bool      `json:"is_active"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }

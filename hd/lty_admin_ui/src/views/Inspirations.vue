@@ -10,6 +10,24 @@
     <el-card class="box-card" shadow="never">
       <div class="toolbar">
         <div class="search-bar">
+          <el-select 
+            v-model="searchMainCategory" 
+            placeholder="主分类" 
+            clearable 
+            @change="handleFilterMainCategoryChange" 
+            class="filter-select"
+          >
+            <el-option v-for="item in mainCategories" :key="item" :label="item" :value="item" />
+          </el-select>
+          <el-select 
+            v-model="searchSubCategory" 
+            placeholder="副分类" 
+            clearable 
+            @change="handleFilterSubCategoryChange" 
+            class="filter-select"
+          >
+            <el-option v-for="item in filterSubCategories" :key="item" :label="item" :value="item" />
+          </el-select>
           <el-input
             v-model="searchQuery"
             placeholder="搜索提示词内容"
@@ -46,9 +64,23 @@
         </el-table-column>
         <el-table-column prop="main_category" label="主分类" width="120" />
         <el-table-column prop="sub_category" label="副分类" width="120" />
+        <el-table-column prop="need_reference_image" label="是否需参考图" width="120">
+          <template #default="{ row }">
+            <el-tag :type="row.need_reference_image ? 'success' : 'info'" size="small">
+              {{ row.need_reference_image ? '是' : '否' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="is_active" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.is_active ? 'success' : 'danger'" size="small">
+              {{ row.is_active ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="content" label="提示词内容" min-width="400">
           <template #default="{ row }">
-            <span style="white-space: pre-wrap; word-break: break-all;">{{ row.content }}</span>
+            <div class="prompt-content-clamp">{{ row.content }}</div>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180">
@@ -111,6 +143,14 @@
             placeholder="请输入提示词内容，这将显示在前台迷你边栏的探索功能中" 
           />
         </el-form-item>
+        <el-form-item label="需参考图" prop="need_reference_image">
+          <el-switch v-model="form.need_reference_image" />
+          <span style="margin-left: 10px; color: #999; font-size: 12px;">开启后，前台应用该提示词时将要求用户上传参考图</span>
+        </el-form-item>
+        <el-form-item label="是否启用" prop="is_active">
+          <el-switch v-model="form.is_active" />
+          <span style="margin-left: 10px; color: #999; font-size: 12px;">关闭后该提示词将不在前台展示</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -147,6 +187,8 @@ interface Inspiration {
   image_url: string
   main_category: string
   sub_category: string
+  need_reference_image: boolean
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -157,6 +199,9 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const searchQuery = ref('')
+const searchMainCategory = ref('')
+const searchSubCategory = ref('')
+const filterSubCategories = ref<string[]>([])
 const selectedIds = ref<number[]>([])
 const batchDeleting = ref(false)
 
@@ -195,6 +240,25 @@ const handleMainCategoryChange = (val: string) => {
   }
 }
 
+const handleFilterMainCategoryChange = (val: string) => {
+  searchSubCategory.value = ''
+  if (!val) {
+    filterSubCategories.value = []
+  } else {
+    const target = categoryTree.value.find((c: any) => c.name === val)
+    if (target && target.sub) {
+      filterSubCategories.value = target.sub
+    } else {
+      filterSubCategories.value = []
+    }
+  }
+  handleSearch()
+}
+
+const handleFilterSubCategoryChange = () => {
+  handleSearch()
+}
+
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const isEdit = ref(false)
@@ -205,7 +269,9 @@ const form = ref({
   content: '',
   image_url: '',
   main_category: '',
-  sub_category: ''
+  sub_category: '',
+  need_reference_image: false,
+  is_active: true
 })
 
 const rules = {
@@ -226,7 +292,9 @@ const loadData = async () => {
       params: {
         page: currentPage.value,
         page_size: pageSize.value,
-        search: searchQuery.value
+        search: searchQuery.value,
+        main_category: searchMainCategory.value,
+        sub_category: searchSubCategory.value
       },
       headers: getAuthHeaders()
     })
@@ -265,7 +333,9 @@ const showAddDialog = () => {
     content: '',
     image_url: '',
     main_category: '',
-    sub_category: ''
+    sub_category: '',
+    need_reference_image: false,
+    is_active: true
   }
   dialogVisible.value = true
   if (formRef.value) {
@@ -280,7 +350,9 @@ const handleEdit = (row: Inspiration) => {
     content: row.content,
     image_url: row.image_url || '',
     main_category: row.main_category || '',
-    sub_category: row.sub_category || ''
+    sub_category: row.sub_category || '',
+    need_reference_image: !!row.need_reference_image,
+    is_active: row.is_active === undefined ? true : !!row.is_active
   }
   
   if (row.main_category) {
@@ -309,7 +381,9 @@ const submitForm = async () => {
             content: form.value.content,
             image_url: form.value.image_url,
             main_category: form.value.main_category,
-            sub_category: form.value.sub_category
+            sub_category: form.value.sub_category,
+            need_reference_image: form.value.need_reference_image,
+            is_active: form.value.is_active
           }, { headers: getAuthHeaders() })
           ElMessage.success('更新成功')
         } else {
@@ -317,7 +391,9 @@ const submitForm = async () => {
             content: form.value.content,
             image_url: form.value.image_url,
             main_category: form.value.main_category,
-            sub_category: form.value.sub_category
+            sub_category: form.value.sub_category,
+            need_reference_image: form.value.need_reference_image,
+            is_active: form.value.is_active
           }, { headers: getAuthHeaders() })
           ElMessage.success('添加成功')
         }
@@ -413,9 +489,24 @@ onMounted(() => {
   width: 300px;
 }
 
+.filter-select {
+  width: 150px;
+}
+
 .pagination-container {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+.prompt-content-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.5;
+  cursor: pointer;
 }
 </style>
