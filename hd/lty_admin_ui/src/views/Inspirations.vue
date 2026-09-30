@@ -211,12 +211,12 @@ const categoryTree = ref<any[]>([])
 
 const loadCategories = async () => {
   try {
-    const res = await axios.get(getApiUrl('/admin/settings/get?key_name=inspiration_categories'), {
+    const res = await axios.get(getApiUrl('/admin/inspiration-categories/list'), {
       headers: getAuthHeaders()
     })
     
-    if (res.data?.data?.key_value) {
-      const parsed = JSON.parse(res.data.data.key_value)
+    if (res.data?.data) {
+      const parsed = res.data.data
       categoryTree.value = parsed
       mainCategories.value = parsed.map((c: any) => c.name)
     } else {

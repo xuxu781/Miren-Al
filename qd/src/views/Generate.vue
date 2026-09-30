@@ -1068,7 +1068,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <div class="list-section-title" style="margin-bottom: 0;">积分明细</div>
         <div class="balance-actions">
-          <button class="balance-recharge-btn" @click="handleRecharge" v-if="siteSettings?.enable_recharge === 'true'">充值</button>
+          <button class="balance-recharge-btn" @click="handleRecharge" v-if="siteSettings?.enable_recharge !== 'false'">充值</button>
           <button class="balance-redeem-btn" @click="showRedeemDialog = true">卡密兑换</button>
         </div>
       </div>
@@ -3613,6 +3613,11 @@ const handleGenerate = async () => {
     return
   }
   
+  if (availableModels.value.length === 0) {
+    ElMessage.warning('当前平台暂无可用模型，请联系客服')
+    return
+  }
+
   if (!form.prompt.trim()) {
     return
   }

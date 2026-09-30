@@ -2,6 +2,7 @@ package lty_config
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -147,6 +148,14 @@ func AutoMigrate() error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+		`CREATE TABLE IF NOT EXISTS lty_inspiration_categories (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			name VARCHAR(100) NOT NULL,
+			sub_categories TEXT,
+			sort_order INT DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 	}
 	
 	for _, q := range queries {
@@ -183,5 +192,39 @@ func AutoMigrate() error {
 	DB.Exec(`CREATE INDEX idx_project_id ON lty_tasks(project_id)`)
 	DB.Exec(`CREATE INDEX idx_series_model ON lty_model_upstreams(series_id, logical_model)`)
 
+	migrateInspirationCategories()
+
 	return nil
+}
+
+func migrateInspirationCategories() {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM lty_inspiration_categories").Scan(&count)
+	if err != nil || count > 0 {
+		return
+	}
+
+	var keyValue string
+	err = DB.QueryRow("SELECT key_value FROM lty_settings WHERE key_name = ?", "inspiration_categories").Scan(&keyValue)
+	if err != nil || keyValue == "" {
+		return
+	}
+
+	type CategoryItem struct {
+		Name string   `json:"name"`
+		Sub  []string `json:"sub"`
+	}
+
+	var categories []CategoryItem
+	if err := json.Unmarshal([]byte(keyValue), &categories); err == nil && len(categories) > 0 {
+		for i, cat := range categories {
+			subBytes, _ := json.Marshal(cat.Sub)
+			if cat.Sub == nil {
+				subBytes = []byte("[]")
+			}
+			DB.Exec("INSERT INTO lty_inspiration_categories (name, sub_categories, sort_order) VALUES (?, ?, ?)", cat.Name, string(subBytes), i)
+		}
+		// Clear old setting after migration
+		DB.Exec("DELETE FROM lty_settings WHERE key_name = ?", "inspiration_categories")
+	}
 }

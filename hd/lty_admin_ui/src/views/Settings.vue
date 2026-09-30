@@ -448,7 +448,7 @@ const loadSettings = async () => {
     settingsForm.value.default_register_points = defaultPoints ? parseInt(defaultPoints, 10) : 5
     
     const enableRecharge = await fetchSetting('enable_recharge')
-    settingsForm.value.enable_recharge = enableRecharge === 'true'
+    settingsForm.value.enable_recharge = enableRecharge !== 'false'
     settingsForm.value.recharge_link = await fetchSetting('recharge_link') || ''
   } catch (error) {
     ElMessage.error('获取配置失败')

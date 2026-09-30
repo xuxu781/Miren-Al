@@ -117,10 +117,11 @@ func GetPublicSettings(w http.ResponseWriter, r *http.Request) {
 		"image_domain":           true,
 		"enable_recharge":        true,
 		"recharge_link":          true,
-		"inspiration_categories": true,
 	}
 
 	result := make(map[string]string)
+	// 默认开启充值
+	result["enable_recharge"] = "true"
 	for _, s := range settings {
 		if publicKeys[s.KeyName] {
 			result[s.KeyName] = s.KeyValue

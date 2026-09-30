@@ -295,11 +295,9 @@ func GetPublicInspirations(w http.ResponseWriter, r *http.Request) {
 func GetPublicInspirationCategories(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var keyValue string
-	err := lty_config.DB.QueryRow("SELECT key_value FROM lty_settings WHERE key_name = ?", "inspiration_categories").Scan(&keyValue)
+	rows, err := lty_config.DB.Query("SELECT name, sub_categories FROM lty_inspiration_categories ORDER BY sort_order ASC")
 	
-	if err != nil || keyValue == "" {
-		// Default fallback if not set
+	if err != nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"categories": []map[string]interface{}{
 				{"name": "人物", "sub": []string{"其他"}},
@@ -312,17 +310,41 @@ func GetPublicInspirationCategories(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	defer rows.Close()
 
-	var parsedCategories interface{}
-	if err := json.Unmarshal([]byte(keyValue), &parsedCategories); err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"categories": []interface{}{},
+	var result []map[string]interface{}
+	for rows.Next() {
+		var name string
+		var subStr string
+		if err := rows.Scan(&name, &subStr); err != nil {
+			continue
+		}
+		var sub []string
+		if subStr != "" {
+			json.Unmarshal([]byte(subStr), &sub)
+		}
+		if sub == nil {
+			sub = []string{}
+		}
+		result = append(result, map[string]interface{}{
+			"name": name,
+			"sub":  sub,
 		})
-		return
+	}
+
+	if len(result) == 0 {
+		result = []map[string]interface{}{
+			{"name": "人物", "sub": []string{"其他"}},
+			{"name": "风景", "sub": []string{"其他"}},
+			{"name": "建筑", "sub": []string{"其他"}},
+			{"name": "科幻", "sub": []string{"其他"}},
+			{"name": "二次元", "sub": []string{"其他"}},
+			{"name": "其他", "sub": []string{"其他"}},
+		}
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"categories": parsedCategories,
+		"categories": result,
 	})
 }
 
