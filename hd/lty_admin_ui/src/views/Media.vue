@@ -138,39 +138,45 @@ onMounted(() => {
 
 <style scoped>
 .media-container {
-  padding: 0;
+  padding-top: 8px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
 .media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 24px;
   min-height: 200px;
 }
 
 .media-item {
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
+  border: 1px solid rgba(229, 229, 234, 0.8);
+  border-radius: 16px;
   overflow: hidden;
-  transition: all 0.3s;
+  background: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  backdrop-filter: blur(10px);
 }
 
 .media-item:hover {
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  border-color: rgba(229, 229, 234, 1);
 }
 
 .image-wrapper {
   position: relative;
   width: 100%;
   height: 200px;
-  background-color: #f5f7fa;
+  background-color: rgba(245, 245, 247, 0.8);
 }
 
 .media-image {
@@ -184,7 +190,7 @@ onMounted(() => {
   align-items: center;
   width: 100%;
   height: 100%;
-  color: #909399;
+  color: #86868b;
   font-size: 30px;
 }
 
@@ -194,12 +200,13 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
 }
 
 .image-wrapper:hover .image-overlay {
@@ -207,13 +214,14 @@ onMounted(() => {
 }
 
 .media-info {
-  padding: 12px;
-  background-color: #fff;
+  padding: 16px;
+  background-color: transparent;
 }
 
 .media-name {
   font-size: 14px;
-  color: #303133;
+  color: #1d1d1f;
+  font-weight: 500;
   margin-bottom: 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -223,11 +231,26 @@ onMounted(() => {
 .media-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  color: #909399;
+  align-items: center;
+  font-size: 13px;
+  color: #86868b;
 }
 
 .empty-state {
   grid-column: 1 / -1;
+}
+
+:deep(.el-radio-button__inner) {
+  border-radius: 8px !important;
+  border: none !important;
+  background: rgba(245, 245, 247, 0.8) !important;
+  margin: 0 4px;
+  box-shadow: none !important;
+}
+
+:deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: #ffffff !important;
+  color: #409eff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
 }
 </style>

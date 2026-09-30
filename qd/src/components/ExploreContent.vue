@@ -246,7 +246,7 @@
         </div>
 
         <!-- 极简风分类选择区 -->
-        <div class="category-filter-section" v-if="categories.length > 0">
+        <div class="category-filter-section" v-if="(categories && categories.length > 0) || publicInspirations.length > 0">
           <div class="main-categories-wrapper">
             <div class="main-categories">
               <div 
@@ -608,13 +608,16 @@ const currentSubCategories = computed(() => {
 const fetchCategories = async () => {
   try {
     const res: any = await request.get('/api/public/inspirations/categories')
-    if (res.data?.categories) {
+    if (res.data?.categories && res.data.categories.length > 0) {
       categories.value = res.data.categories
-    } else if (res.data?.data?.categories) {
+    } else if (res.data?.data?.categories && res.data.data.categories.length > 0) {
       categories.value = res.data.data.categories
+    } else {
+      categories.value = [] // 确保没有数据时为空数组
     }
   } catch (error) {
     console.error('Failed to fetch categories', error)
+    categories.value = [] // 发生错误时确保为空数组
   }
 }
 

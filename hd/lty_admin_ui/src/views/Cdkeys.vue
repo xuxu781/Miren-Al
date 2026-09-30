@@ -162,7 +162,7 @@
     </el-card>
 
     <!-- 生成卡密对话框 -->
-    <el-dialog v-model="dialogVisible" title="生成卡密" width="450px">
+    <el-dialog append-to-body v-model="dialogVisible" title="生成卡密" width="450px">
       <el-form :model="generateForm" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="生成数量" prop="count">
           <el-input-number v-model="generateForm.count" :min="1" :max="1000" />
@@ -225,7 +225,7 @@
     </el-dialog>
 
     <!-- 编辑卡密对话框 -->
-    <el-dialog v-model="editDialogVisible" title="编辑卡密" width="450px">
+    <el-dialog append-to-body v-model="editDialogVisible" title="编辑卡密" width="450px">
       <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px">
         <el-form-item label="单张积分" prop="points">
           <el-input-number v-model="editForm.points" :min="1" :max="100000" />
@@ -258,7 +258,7 @@
     </el-dialog>
 
     <!-- 使用记录对话框 -->
-    <el-dialog v-model="usagesDialogVisible" title="卡密使用记录" width="500px">
+    <el-dialog append-to-body v-model="usagesDialogVisible" title="卡密使用记录" width="500px">
       <el-table :data="usageList" style="width: 100%" v-loading="loadingUsages">
         <el-table-column prop="email" label="使用者邮箱" min-width="200" />
         <el-table-column prop="created_at" label="使用时间" width="180">
@@ -275,7 +275,7 @@
     </el-dialog>
 
     <!-- 生成结果展示对话框 -->
-    <el-dialog v-model="resultDialogVisible" title="卡密生成成功" width="500px">
+    <el-dialog append-to-body v-model="resultDialogVisible" title="卡密生成成功" width="500px">
       <div class="result-container">
         <el-input
           type="textarea"
@@ -684,7 +684,7 @@ onMounted(() => {
 
 <style scoped>
 .cdkeys-container {
-  padding: 0;
+  padding-top: 8px;
 }
 
 .page-header {
@@ -696,30 +696,32 @@ onMounted(() => {
 
 .page-header h2 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #161823;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: -0.5px;
 }
 
 .toolbar {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .search-bar {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .search-input {
-  width: 300px;
+  width: 240px;
 }
 
 .status-select {
-  width: 120px;
+  width: 140px;
 }
 
 .points-input {
-  width: 140px;
+  width: 160px;
 }
 
 .user-input {
@@ -728,11 +730,12 @@ onMounted(() => {
 
 .font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  background-color: #f3f4f6;
-  padding: 2px 6px;
-  border-radius: 4px;
+  background-color: rgba(245, 245, 247, 0.8);
+  padding: 4px 8px;
+  border-radius: 6px;
   font-size: 13px;
-  color: #374151;
+  color: #1d1d1f;
+  border: 1px solid rgba(229, 229, 234, 0.5);
 }
 
 .ml-2 {
@@ -740,11 +743,11 @@ onMounted(() => {
 }
 
 .text-gray-400 {
-  color: #9ca3af;
+  color: #86868b;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
 }
