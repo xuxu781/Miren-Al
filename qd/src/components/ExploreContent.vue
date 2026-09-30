@@ -37,11 +37,11 @@
       </div>
     </header>
 
-    <div class="explore-content-area">
+    <div class="explore-content-area" @scroll="handleScroll">
       <div class="explore-container">
         
         <!-- Hero Section with Input Box -->
-        <div class="relative z-50 w-full px-0 sm:px-6 md:px-8 mb-12 mt-0 trae-browser-inspect-draggable">
+        <div class="relative z-50 w-full px-0 sm:px-6 md:px-8 mb-8 mt-0 trae-browser-inspect-draggable">
           <div class="mx-auto w-full max-w-[1454px]">
             <h1 class="relative z-[60] mb-6 md:mb-12 mt-4 md:mt-6 flex flex-col gap-1.5 md:gap-4 text-center font-sans items-center justify-center group">
               <span class="relative block text-[28px] sm:text-[44px] md:text-[64px] font-black leading-[1.2] tracking-tight px-2 flex flex-wrap justify-center items-center">
@@ -54,7 +54,7 @@
               <div class="rounded-2xl transition-all duration-200 ease-in-out min-w-0 max-w-full p-0 flex min-h-0 flex-col">
                 <div class="relative w-full flex min-h-0 flex-col">
                   <!-- Main Input Box -->
-                  <div class="explore-input-wrapper">
+                  <div class="input-area-wrapper" :class="{ 'is-shrunk': isInputShrunk }" :style="{ '--keyboard-offset': `${keyboardOffset}px` }">
                     <!-- 嵌入与 Generate.vue 相同的输入框和工具栏 -->
                     <div class="input-container">
                       <div class="input-tools-container">
@@ -84,7 +84,11 @@
                                 :class="{ 'is-active-model': props.form.series_id === model.series_id }"
                               >
                                 <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
-                                    <span>{{ model.name }}</span>
+                                    <div style="display: flex; align-items: center;">
+                                      <el-icon v-if="props.form.series_id === model.series_id" style="color: #3b82f6; font-size: 14px; margin-right: 6px; font-weight: bold;"><Check /></el-icon>
+                                      <span v-else style="width: 20px; display: inline-block;"></span>
+                                      <span>{{ model.name }}</span>
+                                    </div>
                                     <span v-if="model.activity_tag" class="shimmer-tag" :style="{ fontSize: '11px', color: '#fff', background: model.activity_tag_color || '#10b981', padding: '2px 6px', borderRadius: '4px', lineHeight: '1.2', whiteSpace: 'nowrap' }">{{ model.activity_tag }}</span>
                                     <span v-else-if="props.hasFreeResolution(model)" class="shimmer-tag" style="font-size: 11px; color: #fff; background: #10b981; padding: 2px 6px; border-radius: 4px; line-height: 1.2; white-space: nowrap;">限时免费</span>
                                   </div>
@@ -94,7 +98,11 @@
                                 command="default"
                                 :class="{ 'is-active-model': props.form.series_id === 'default' }"
                               >
-                                默认模型
+                                <div style="display: flex; align-items: center;">
+                                  <el-icon v-if="props.form.series_id === 'default'" style="color: #3b82f6; font-size: 14px; margin-right: 6px; font-weight: bold;"><Check /></el-icon>
+                                  <span v-else style="width: 20px; display: inline-block;"></span>
+                                  <span>默认模型</span>
+                                </div>
                               </el-dropdown-item>
                             </el-dropdown-menu>
                           </template>
@@ -193,17 +201,18 @@
                               ref="inputRef"
                               v-model="props.form.prompt"
                               type="textarea"
-                              :rows="props.windowWidth > 768 ? 3 : 1"
-                              :autosize="{ minRows: props.windowWidth > 768 ? 3 : 1, maxRows: 6 }"
-                              placeholder="请输入你想生成的图片描述..."
+                              :rows="1"
+                              :autosize="{ minRows: 1, maxRows: 6 }"
+                              :placeholder="props.windowWidth <= 768 ? '请输入图片描述...' : '请输入你想生成的图片描述...'"
                               resize="none"
                               class="chat-input"
-                              :input-style="props.windowWidth > 768 ? { minHeight: '72px' } : undefined"
                               :class="{ 'has-references': props.form.reference_image && props.form.reference_image.length > 0, 'no-refs-allowed': props.currentModelMaxRefImages === 0 }"
-                              @keydown.enter.prevent="handleSend"
+                              @keydown.enter.exact.prevent="handleSend"
+                              @keydown.enter.shift.exact.prevent="handleShiftEnter"
                               @focus="isInputFocused = true; isInputShrunk = false"
-                              @blur="isInputFocused = false"
+                              @blur="handleInputBlur"
                               @click="isInputFocused = true; isInputShrunk = false"
+                              @input="handleInput"
                             />
                           <el-button
                             v-if="props.windowWidth <= 768 && isMobileRefExpanded"
@@ -287,48 +296,66 @@
           </div>
         </div>
 
-        <!-- 瀑布流布局区 (Prompts Gallery Style) -->
-        <div class="explore-masonry" v-loading="loadingInspirations">
+        <!-- 瀑布流布局区 (Flex Columns Masonry，彻底解决跳动问题) -->
+        <div class="explore-masonry-flex" v-if="publicInspirations.length > 0 || loadingInspirations">
+          
           <div 
-            v-for="item in publicInspirations" 
-            :key="item.id" 
-            class="prompt-card"
-            @click="useSuggestion(item.content)"
+            class="masonry-column" 
+            v-for="(col, colIndex) in masonryColumnsData" 
+            :key="'col-' + colIndex"
           >
-            <el-image 
-              v-if="item.image_url" 
-              :src="item.image_url" 
-              fit="cover" 
-              loading="lazy"
-              class="card-image"
+            <!-- 真实数据 -->
+            <div 
+              v-for="item in col" 
+              :key="'img-' + item.id" 
+              class="prompt-card"
+              @click="handleShowPrompt(item)"
             >
-              <template #placeholder>
-                <div class="image-placeholder">
-                  <el-icon class="is-loading"><Loading /></el-icon>
-                </div>
-              </template>
-              <template #error>
-                <div class="image-error">
-                  <el-icon><Picture /></el-icon>
-                </div>
-              </template>
-            </el-image>
-            <div v-else class="explore-no-image">
-              <el-icon><Picture /></el-icon>
-            </div>
-            
-            <!-- 悬浮时的遮罩与内容 -->
-            <div class="card-overlay">
-              <div class="overlay-content">
-                <p class="card-prompt-text">{{ item.content }}</p>
-                <div class="overlay-actions">
-                  <el-button type="primary" size="small" class="try-btn" round>
-                    <el-icon style="margin-right: 4px"><MagicStick /></el-icon> 画同款
-                  </el-button>
+              <el-image 
+                v-if="item.image_url" 
+                :src="item.image_url" 
+                fit="cover" 
+                loading="lazy"
+                class="card-image"
+              >
+                <template #placeholder>
+                  <div class="image-placeholder shimmer-placeholder"></div>
+                </template>
+                <template #error>
+                  <div class="image-error">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+              <div v-else class="explore-no-image">
+                <el-icon><Picture /></el-icon>
+              </div>
+              
+              <!-- 悬浮时的遮罩与内容 -->
+              <div class="card-overlay">
+                <div class="overlay-content">
+                  <p class="card-prompt-text">{{ item.content }}</p>
+                  <div class="overlay-actions">
+                    <el-button type="primary" size="small" class="try-btn" round @click.stop="useSuggestion(item)">
+                      <el-icon style="margin-right: 4px"><MagicStick /></el-icon> {{ item.need_reference_image ? '选择参考图' : '画同款' }}
+                    </el-button>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <!-- 每列底部的骨架屏占位 -->
+            <template v-if="loadingInspirations">
+              <div 
+                v-for="i in (publicInspirations.length === 0 ? 5 : 2)" 
+                :key="'skeleton-' + colIndex + '-' + i" 
+                class="prompt-card"
+              >
+                <div class="card-image shimmer-placeholder" :style="{ aspectRatio: (colIndex + i) % 3 === 0 ? '4/3' : ((colIndex + i) % 2 === 0 ? '1/1' : '3/4'), border: 'none' }"></div>
+              </div>
+            </template>
           </div>
+
         </div>
 
         <!-- 空状态 -->
@@ -337,28 +364,94 @@
           description="暂无内容，敬请期待" 
           :image-size="100" 
         />
-
-        <!-- 加载中指示器 -->
-        <div class="loading-more" v-if="loadingInspirations && publicInspirations.length > 0">
-          <el-icon class="is-loading"><Loading /></el-icon>
-          正在加载更多...
-        </div>
         
         <!-- 没有更多数据提示 -->
-        <div class="no-more-data" v-if="noMoreData && publicInspirations.length > 0">
+        <div class="no-more-data" v-if="noMoreData && publicInspirations.length > 0 && !loadingInspirations">
           <span class="divider-line"></span>
           <span>已经到底啦</span>
           <span class="divider-line"></span>
         </div>
       </div>
     </div>
+
+    <!-- 灵感详情弹窗 (高级版分栏设计) -->
+    <el-dialog 
+      v-model="showPromptDialog" 
+      :width="props.windowWidth <= 768 ? '90%' : '900px'"
+      align-center 
+      destroy-on-close
+      :show-close="false"
+      class="advanced-inspiration-dialog"
+    >
+      <div class="advanced-split-layout" :class="{ 'has-image': !!currentInspirationDetail?.image_url }">
+        
+        <!-- 左侧图片区 (有图片才显示) -->
+        <div v-if="currentInspirationDetail?.image_url" class="advanced-left-image">
+          <!-- 动态模糊背景 -->
+          <div class="advanced-blur-bg" :style="{ backgroundImage: `url(${currentInspirationDetail.image_url})` }"></div>
+
+          <!-- 移动端悬浮关闭按钮 -->
+          <div class="mobile-close-btn" @click="showPromptDialog = false">
+            <el-icon><Close /></el-icon>
+          </div>
+          
+          <el-image 
+            :src="currentInspirationDetail.image_url" 
+            fit="contain"
+            class="advanced-main-image"
+            :preview-src-list="[currentInspirationDetail.image_url]"
+            :preview-teleported="true"
+          >
+            <template #placeholder>
+              <div class="advanced-image-skeleton">
+                <div class="skeleton-pulse-ring"></div>
+                <div class="skeleton-pulse-ring delay"></div>
+                <el-icon class="skeleton-glow-icon"><Picture /></el-icon>
+                <span class="skeleton-text">正在渲染高清画作...</span>
+              </div>
+            </template>
+          </el-image>
+        </div>
+
+        <!-- 右侧内容区 -->
+        <div class="advanced-right-content">
+          <div class="advanced-right-header">
+            <div class="advanced-title">
+              <el-icon><MagicStick /></el-icon>
+              <span>灵感详情</span>
+            </div>
+            <!-- PC端关闭按钮 -->
+            <div class="desktop-close-btn" @click="showPromptDialog = false">
+              <el-icon><Close /></el-icon>
+            </div>
+          </div>
+          
+          <div class="advanced-right-body">
+            <div class="advanced-prompt-container">
+              <div class="advanced-prompt-label">PROMPT 提示词</div>
+              <div class="advanced-prompt-text">
+                {{ currentInspirationDetail?.content }}
+              </div>
+            </div>
+          </div>
+
+          <div class="advanced-right-footer">
+            <el-button class="advanced-btn use-btn" type="primary" @click="useSuggestionFromDialog">
+              <el-icon><Position /></el-icon> {{ currentInspirationDetail?.need_reference_image ? '选择参考图' : '画同款' }}
+            </el-button>
+          </div>
+        </div>
+
+      </div>
+    </el-dialog>
   </main>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Expand, Picture, Loading, Coin, Edit, Position, Cpu, Crop, Close, MagicStick } from '@element-plus/icons-vue'
+import { Expand, Picture, Coin, Edit, Position, Cpu, Crop, Close, MagicStick, Check } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { useAuthStore } from '@/store/auth'
 
@@ -391,15 +484,85 @@ const userPoints = computed(() => {
 })
 
 const isInputFocused = ref(false)
-const isInputShrunk = ref(false)
+const isInputShrunk = ref(true)
 const isMobileRefExpanded = ref(false)
 
-const handleSend = () => {
+// 键盘高度偏移
+const keyboardOffset = ref(0)
+const handleVisualViewport = () => {
+  if (window.visualViewport) {
+    // 当视觉视口高度小于窗口内部高度时，说明键盘弹起了
+    const offset = window.innerHeight - window.visualViewport.height
+    if (offset > 0 && isInputFocused.value) {
+      keyboardOffset.value = offset
+    } else {
+      keyboardOffset.value = 0
+    }
+  }
+}
+
+// 处理失去焦点：如果输入框有内容，则不收缩
+const handleInputBlur = () => {
+  isInputFocused.value = false
+  // 移除在 blur 时的收缩逻辑，收缩逻辑统一交给 handleClickOutside 处理，
+  // 避免点击上传按钮打开文件选择器时输入框自动收缩。
+}
+
+// 处理输入事件：只要有输入，强制保持展开状态
+const handleInput = () => {
+  if (props.form.prompt.trim()) {
+    isInputShrunk.value = false
+  }
+}
+
+// Click outside to shrink input and remove focus
+const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+  const target = e.target as HTMLElement
+  
+  // 排除 Element Plus 的弹出层，防止点击下拉菜单等 teleport 元素时收缩
+  if (target.closest('.el-popper') || target.closest('.el-select-dropdown') || target.closest('.el-dialog') || target.closest('.el-overlay')) {
+    return
+  }
+
+  if (!target.closest('.explore-input-wrapper') && !target.closest('.input-area-wrapper')) {
+    isInputFocused.value = false
+    isInputShrunk.value = true
+  }
+  // 点击外部时收起移动端的图片堆叠
+  if (!target.closest('.reference-image-preview-inline')) {
+    isMobileRefExpanded.value = false
+  }
+}
+
+watch(() => props.form.reference_image?.length, (newLen, oldLen) => {
+  if (newLen > (oldLen || 0) && props.windowWidth <= 768) {
+    isMobileRefExpanded.value = true
+    isInputShrunk.value = false
+  }
+})
+
+const handleSend = (e?: KeyboardEvent) => {
+  if (e && e.isComposing) return
   if (props.form.prompt.trim()) {
     // emit('generate') 
     // 如果想要点击后去生成页面，可以直接跳转
     router.push({ path: '/', query: { q: props.form.prompt } })
   }
+}
+
+const handleShiftEnter = (e: KeyboardEvent) => {
+  if (e.isComposing) return
+  e.preventDefault()
+  const textarea = e.target as HTMLTextAreaElement
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const value = props.form.prompt
+  props.form.prompt = value.substring(0, start) + '\n' + value.substring(end)
+  // 重新聚焦并设置光标位置
+  nextTick(() => {
+    textarea.focus()
+    textarea.selectionStart = textarea.selectionEnd = start + 1
+  })
 }
 
 // Inspirations logic
@@ -408,6 +571,28 @@ const loadingInspirations = ref(false)
 const currentPage = ref(1)
 const totalInspirations = ref(0)
 const noMoreData = ref(false)
+
+// 分列计算逻辑 (瀑布流完美布局)
+const columnsCount = ref(5) // 默认5列
+
+const updateColumnsCount = () => {
+  const width = window.innerWidth
+  if (width <= 800) columnsCount.value = 2
+  else if (width <= 1200) columnsCount.value = 3
+  else if (width <= 1600) columnsCount.value = 4
+  else columnsCount.value = 5
+}
+
+// 将一维数据按照最短列算法分配到多列中
+const masonryColumnsData = computed(() => {
+  const cols = Array.from({ length: columnsCount.value }, () => [] as any[])
+  // 简单轮询分配，为了性能和视觉稳定性，按顺序依次分配到各列
+  publicInspirations.value.forEach((item, index) => {
+    const colIndex = index % columnsCount.value
+    cols[colIndex].push(item)
+  })
+  return cols
+})
 
 // Categories logic
 const categories = ref<any[]>([])
@@ -499,27 +684,39 @@ const fetchPublicInspirations = async () => {
       }
     } else {
       if (currentPage.value === 1) {
-        // 直接替换，Vue 的虚拟 DOM 会处理差异，避免先清空再赋值产生的闪烁
+        // 直接替换
         publicInspirations.value = newList
       } else {
-        publicInspirations.value = [...publicInspirations.value, ...newList]
+        // 过滤掉可能重复的数据，再追加
+        const existingIds = new Set(publicInspirations.value.map(item => item.id))
+        const uniqueNewList = newList.filter(item => !existingIds.has(item.id))
+        
+        if (uniqueNewList.length === 0) {
+           // 如果返回的数据全部是重复的，也认为到底了
+           noMoreData.value = true
+        } else {
+           publicInspirations.value = [...publicInspirations.value, ...uniqueNewList]
+        }
       }
       
       // Check if we loaded all data
       if (newList.length < 20) {
         noMoreData.value = true
-      } else {
+      } else if (!noMoreData.value) {
         currentPage.value++
       }
     }
   } catch (error) {
     console.error('Failed to fetch inspirations', error)
   } finally {
-    loadingInspirations.value = false
+    setTimeout(() => {
+      loadingInspirations.value = false
+    }, 500) // 延迟500ms关闭loading状态，让骨架屏能够展示一会
   }
 }
 
 // Scroll handler for infinite scrolling
+const lastScrollTop = ref(0)
 const handleScroll = () => {
   const scrollContainer = document.querySelector('.explore-content-area')
   if (!scrollContainer) return
@@ -528,30 +725,89 @@ const handleScroll = () => {
   const scrollTop = scrollContainer.scrollTop
   const clientHeight = scrollContainer.clientHeight
   
+  // 忽略极小的滚动以防抖动
+  if (Math.abs(scrollTop - lastScrollTop.value) > 10) {
+    // 只要发生有效滑动，就关闭移动端参考图展开 (移除滑动收缩输入框的逻辑)
+    isMobileRefExpanded.value = false
+    lastScrollTop.value = scrollTop
+  }
+  
   // If user scrolls within 100px of bottom, fetch more
   if (scrollHeight - scrollTop - clientHeight < 100) {
     fetchPublicInspirations()
   }
 }
 
-const useSuggestion = (text: string) => {
+const useSuggestion = (item: any) => {
+  const isString = typeof item === 'string'
+  const text = isString ? item : item.content
   props.form.prompt = text
+  
+  if (!isString && item.need_reference_image) {
+    ElMessage({
+      message: '该提示词建议您上传参考图，请在弹出的窗口中选择',
+      type: 'warning',
+      duration: 4000,
+      showClose: true
+    })
+    if (typeof props.triggerUpload === 'function') {
+      props.triggerUpload()
+    } else {
+      // 触发一个自定义事件或者通过总线通知
+      window.dispatchEvent(new CustomEvent('trigger-upload-from-explore'))
+    }
+  }
   router.push({ path: '/', query: { q: text } })
+}
+
+// 提示词详情展示逻辑
+const showPromptDialog = ref(false)
+const currentInspirationDetail = ref<any>(null)
+
+const handleShowPrompt = (item: any) => {
+  currentInspirationDetail.value = item
+  showPromptDialog.value = true
+}
+
+// const handleCopyPrompt = async () => {
+//   if (!currentInspirationDetail.value?.content) return
+//   try {
+//     await navigator.clipboard.writeText(currentInspirationDetail.value.content)
+//     ElMessage.success('提示词已复制')
+//   } catch (err) {
+//     ElMessage.error('复制失败，请手动复制')
+//   }
+// }
+
+const useSuggestionFromDialog = () => {
+  if (currentInspirationDetail.value?.content) {
+    useSuggestion(currentInspirationDetail.value)
+    showPromptDialog.value = false
+  }
 }
 
 onMounted(() => {
   fetchCategories()
   fetchPublicInspirations()
-  const scrollContainer = document.querySelector('.explore-content-area')
-  if (scrollContainer) {
-    scrollContainer.addEventListener('scroll', handleScroll)
+  updateColumnsCount() // 初始化列数
+  window.addEventListener('resize', updateColumnsCount) // 监听窗口大小变化
+  document.addEventListener('mousedown', handleClickOutside)
+  document.addEventListener('touchstart', handleClickOutside)
+  
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleVisualViewport)
+    window.visualViewport.addEventListener('scroll', handleVisualViewport)
   }
 })
 
 onUnmounted(() => {
-  const scrollContainer = document.querySelector('.explore-content-area')
-  if (scrollContainer) {
-    scrollContainer.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', updateColumnsCount)
+  document.removeEventListener('mousedown', handleClickOutside)
+  document.removeEventListener('touchstart', handleClickOutside)
+  
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleVisualViewport)
+    window.visualViewport.removeEventListener('scroll', handleVisualViewport)
   }
 })
 </script>
@@ -568,14 +824,14 @@ onUnmounted(() => {
 }
 
 /* 样式部分保持 Generate.vue 的 input 样式结构 */
-.explore-input-wrapper {
+.input-area-wrapper {
   position: relative;
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   background-color: transparent;
   border-radius: 20px;
-  transition: all 0.3s ease;
+  transition: transform 0.1s ease-out, padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -583,13 +839,13 @@ onUnmounted(() => {
   pointer-events: auto;
 }
 
-.explore-input-wrapper .input-container,
-.explore-input-wrapper .input-tools-container {
+.input-area-wrapper .input-container,
+.input-area-wrapper .input-tools-container {
   pointer-events: auto;
 }
 
 .input-area-wrapper.is-shrunk {
-  padding-bottom: calc(32px + env(safe-area-inset-bottom)) !important; /* 增加悬浮高度 */
+  padding-bottom: 0px !important; /* 取消悬浮高度增加，让其更紧凑，稍微向上移一点 */
 }
 
 .input-area-wrapper.is-shrunk::before {
@@ -603,24 +859,28 @@ onUnmounted(() => {
   overflow: hidden;
   pointer-events: none;
   transform: translateY(10px);
+  position: absolute; /* 防止收缩时占据高度 */
 }
 
 .input-area-wrapper.is-shrunk .input-box {
   width: 100%;
-  min-height: 40px;
+  min-height: 40px !important;
   border-radius: 0;
   box-shadow: none;
   border-color: transparent;
   background-color: transparent;
   backdrop-filter: none;
-  padding: 0;
+  padding: 0 !important;
   gap: 8px !important; /* 收缩状态下减小图片与文字之间的间距 */
+  margin-top: 0;
+  align-items: center !important;
 }
 
 .input-area-wrapper.is-shrunk .initial-upload-item {
   width: 28px !important;
   height: 32px !important;
   margin-right: 0 !important; /* 取消额外边距，完全靠 gap 控制 */
+  margin-top: 0 !important; /* 收缩状态下取消下移 */
   transform: rotate(-8deg) !important;
   border-radius: 6px;
   position: relative !important;
@@ -641,6 +901,7 @@ onUnmounted(() => {
 
 .input-area-wrapper.is-shrunk .reference-image-preview-inline {
   margin-right: 0 !important; /* 取消额外边距，完全靠 gap 控制 */
+  margin-top: 0 !important; /* 收缩状态下取消下移 */
   pointer-events: auto; /* 允许交互 */
   overflow: visible !important; /* 收缩状态下强制取消所有滚动条 */
 }
@@ -651,6 +912,14 @@ onUnmounted(() => {
   transition: all 0.3s ease;
   pointer-events: auto;
   cursor: pointer;
+  margin-right: -4px !important; /* 让图片和输入框靠得更近一点 */
+}
+
+@media (max-width: 768px) {
+  .input-area-wrapper.is-shrunk .preview-list-inline {
+    transform: translateY(-10px); /* 仅在手机端向上修正位置 */
+    margin-right: -6px !important; /* 手机端靠得更近一点 */
+  }
 }
 
 .input-area-wrapper.is-shrunk .preview-container-inline {
@@ -706,12 +975,56 @@ onUnmounted(() => {
   display: none !important; /* 收缩状态下隐藏图片上的删除和添加小按钮，保持图标纯净 */
 }
 
-.input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner) {
-  padding-left: 12px !important;
-  font-size: 14px;
-  min-height: 24px !important;
-  line-height: 24px !important;
+.input-area-wrapper.is-shrunk :deep(.chat-input) {
+  min-height: 36px !important;
+  height: 36px !important;
 }
+
+.input-area-wrapper.is-shrunk .input-box {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.input-area-wrapper.is-shrunk :deep(.chat-input.has-references) {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.input-area-wrapper.is-shrunk .input-box.has-refs {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.input-area-wrapper.is-shrunk :deep(.chat-input.has-references .el-textarea__inner) {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding-top: 9px !important;
+  padding-bottom: 9px !important;
+  max-height: 36px !important;
+  margin-left: -8px !important;
+}
+
+.input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner) {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    display: block !important;
+    max-height: 36px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    margin-left: -8px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner::placeholder) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 18px !important;
+  }
 
 .input-area-wrapper.is-shrunk .send-btn {
   transform: scale(0.85);
@@ -724,7 +1037,7 @@ onUnmounted(() => {
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
   
-  .explore-input-wrapper {
+  .input-area-wrapper {
     padding: 0 16px !important;
     width: 100%;
     margin-left: 0;
@@ -734,19 +1047,22 @@ onUnmounted(() => {
   }
   
     .input-container {
-    padding: 8px 12px 4px !important;
-    border-radius: 16px !important;
+    padding: 8px 6px 6px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(229, 231, 235, 0.5) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.02) !important;
   }
   
   .reference-upload-item.initial-upload-item {
     width: 40px;
     height: 48px;
     margin-right: 12px; /* 适当增加初始状态下旋转卡片与文字的间距，防止遮挡 */
+    margin-top: -6px; /* 向上移一点 */
   }
   
   .preview-list-inline {
-    width: 48px;
-    height: 56px; /* 减小高度，避免撑高整个输入框 */
+    width: 48px; /* 恢复为电脑端的宽度 */
+    height: 72px; /* 恢复为电脑端的高度 */
   }
   
   .preview-container-inline {
@@ -798,21 +1114,6 @@ onUnmounted(() => {
   .input-box .preview-list-inline.is-expandable.is-mobile-expanded .collapsed-upload-badge {
     opacity: 0;
     pointer-events: none;
-  }
-
-  :deep(.chat-input) {
-    min-height: 40px !important;
-  }
-  
-  :deep(.chat-input .el-textarea__inner) {
-    min-height: 40px !important;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important; /* 手机端减小文本框的上下内边距 */
-  }
-
-  .input-box {
-    min-height: 40px !important; /* 手机端取消强制的 72px 高度限制 */
-    padding: 4px 0px !important;
   }
 
   .send-btn {
@@ -903,6 +1204,7 @@ onUnmounted(() => {
   position: relative;
   transform: rotate(-8deg);
   margin-right: 8px;
+  margin-top: 8px; /* 向下移一点 */
   width: 48px;
   height: 56px;
   border-radius: 8px;
@@ -958,13 +1260,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   margin-right: 4px; /* 电脑端默认减小右侧间距，拉近和文字距离 */
+  margin-top: 8px; /* 向下移一点 */
   flex-shrink: 0;
 }
 
 .preview-list-inline {
   position: relative;
   width: 48px;
-  height: 72px;
+  height: 56px;
   background-color: transparent;
   display: flex;
   align-items: center;
@@ -1155,19 +1458,26 @@ onUnmounted(() => {
 
 
 .input-container {
-  width: 100%;
-  max-width: 1400px; /* 从 1200px 增加到 1400px */
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  width: calc(100% - 40px);
+  max-width: 860px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(229, 231, 235, 0.85);
   border-radius: 24px;
   box-sizing: border-box;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 4px 10px rgba(0, 0, 0, 0.02);
-  padding: 16px;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.04),
+    0 12px 32px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 0;
+  gap: 8px;
+  margin: 0 auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: visible;
 }
 
 .search-suggestions {
@@ -1254,14 +1564,15 @@ onUnmounted(() => {
 }
 
 .input-area-wrapper.is-shrunk .input-container {
-  width: 50%;
-  min-width: 280px;
-  max-width: 500px;
+  width: 60%;
+  min-width: 320px;
+  max-width: 600px;
   padding: 8px 16px;
   border-radius: 36px;
   background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
   border-color: transparent;
   gap: 0;
 }
@@ -1274,26 +1585,30 @@ onUnmounted(() => {
 }
 
 .input-container:focus-within {
-  border-color: #d1d5db;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  border-color: rgba(229, 231, 235, 0.85);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.04),
+    0 12px 32px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
 }
 
 .model-dropdown-wrapper {
   max-width: 100%;
   display: inline-flex;
-  flex: 0 0 auto;
-  min-width: 0;
 }
 
 .model-settings-btn {
-  justify-content: flex-start;
+  width: 100%;
+  min-width: 100px;
+  max-width: 200px;
+  justify-content: space-between;
 }
 
 .model-btn-content {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex: 0 1 auto;
+  flex: 1;
   min-width: 0;
 }
 
@@ -1302,13 +1617,15 @@ onUnmounted(() => {
 }
 
 .model-name-text {
-  overflow: visible;
+  display: block !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 0 1 auto;
+  flex: 1;
   min-width: 0;
   text-align: left;
-  max-width: none; /* 移除最大宽度限制，防止文字被截断 */
-  line-height: 1.2;
+  line-height: 1.5;
+  max-width: 200px;
 }
 
 .arrow-icon {
@@ -1328,12 +1645,13 @@ onUnmounted(() => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: bottom center;
   width: 100%;
-  max-width: 1400px;
-  margin-bottom: 8px;
+  max-width: 100%;
+  margin-bottom: 0px;
   display: flex;
   justify-content: flex-start;
   position: relative;
   z-index: 100;
+  min-width: 0;
 }
 
 .input-tools {
@@ -1343,7 +1661,10 @@ onUnmounted(() => {
     align-items: center;
     flex-wrap: wrap; /* 允许在空间不足时换行 */
     overflow: visible; /* 移除任何截断 */
-  }
+}
+.input-tools::-webkit-scrollbar {
+  display: none;
+}
 
 :deep(.input-tools .el-select__wrapper) {
   box-shadow: none !important;
@@ -1404,15 +1725,15 @@ onUnmounted(() => {
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-  max-width: 1400px; /* 从 1200px 增加到 1400px */
+  max-width: 100%;
   background: transparent;
   border: none;
   border-radius: 20px;
-  padding: 8px 0px; /* 取消左右内边距 */
-  gap: 8px; /* 减小内部元素间距 */
+  padding: 0;
+  gap: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
-  min-height: 72px;
+  min-height: 44px;
   box-shadow: none;
 }
 
@@ -1427,7 +1748,7 @@ onUnmounted(() => {
 }
 
 .input-area-wrapper.is-shrunk .input-box.has-refs {
-  min-height: 40px;
+  min-height: 28px !important;
   padding-bottom: 0px !important;
 }
 
@@ -1439,37 +1760,64 @@ onUnmounted(() => {
   --el-input-focus-border-color: transparent;
   --el-input-hover-border-color: transparent;
   --el-input-border-color: transparent;
-  min-height: 72px;
+  min-height: 44px;
 }
 
 :deep(.chat-input .el-textarea__inner) {
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
   box-shadow: none !important;
   background-color: transparent !important;
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-  font-size: 16px;
-  line-height: 24px !important;
-  min-height: 72px !important;
+  padding-top: 11px !important;
+  padding-bottom: 11px !important;
+  font-size: 15px !important;
+  line-height: 22px !important;
+  min-height: 44px !important;
   color: #111827;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none !important;
-  display: flex;
-  align-items: center;
+  font-family: inherit;
+  display: block !important;
+  height: auto;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+}
+
+/* 电脑端滚动条样式 */
+:deep(.chat-input .el-textarea__inner::-webkit-scrollbar) {
+  width: 6px;
+}
+:deep(.chat-input .el-textarea__inner::-webkit-scrollbar-thumb) {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 6px;
+}
+:deep(.chat-input .el-textarea__inner::-webkit-scrollbar-track) {
+  background: transparent;
 }
 
 /* 移除了其他的 padding-left 规则 */
 
 :deep(.chat-input .el-textarea__inner::placeholder) {
   color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: inherit !important;
 }
 
 .send-btn {
   margin-bottom: 4px;
   background-color: #111827 !important;
   border-color: #111827 !important;
-  transition: transform 0.2s ease, opacity 0.2s, width 0.3s ease;
+  transition: transform 0.2s ease, opacity 0.2s, width 0.3s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.15);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
 }
 
 .send-btn.maintenance-btn {
@@ -1480,11 +1828,13 @@ onUnmounted(() => {
   border-color: #9ca3af !important;
   color: #fff !important;
   opacity: 1 !important;
+  box-shadow: none;
 }
 
 .send-btn:hover:not(.is-disabled) {
   transform: scale(1.05);
   opacity: 0.9;
+  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.24);
 }
 
 .send-btn.is-disabled {
@@ -1604,7 +1954,6 @@ onUnmounted(() => {
   
   .global-account-container.mobile-open {
     transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
   }
   
   .accountTriggerAvatar {
@@ -1640,21 +1989,29 @@ onUnmounted(() => {
   
   .input-tools-container {
     max-width: 100%;
-    width: 100%;
+    width: auto; /* column 父容器 stretch 会约束到内容区宽度；width:100% 会解析为 padding box 导致溢出 */
     padding: 0;
     box-sizing: border-box;
     margin-bottom: 0;
+    min-width: 0; /* flex item 默认 min-width:auto 会被内容撑开，导致设置按钮溢出容器右边界 */
   }
 
   .input-container {
     max-width: 100%;
     width: 100%;
-    padding: 8px 6px 4px !important; /* 手机端减小顶部和底部 padding，特别是底部 */
-    border-radius: 16px;
+    padding: 8px 6px 6px !important; /* 手机端减小顶部和底部 padding，特别是底部 */
+    border-radius: 12px;
+    border: 1px solid rgba(229, 231, 235, 0.5) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.02) !important;
+  }
+  
+  .input-area-wrapper.is-shrunk .input-container {
+    padding: 8px 12px !important;
+    border-radius: 20px !important;
   }
 
   .input-area-wrapper {
-    padding: 6px 0 6px 0; /* 减小 wrapper 留白 */
+    padding: 6px 16px 6px 16px; /* 统一外边距 */
   }
 
   .message-inner {
@@ -1686,12 +2043,15 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     margin-right: 0px; /* 移动端下移除右侧间距，让它更靠近文本 */
+    margin-top: 0px; /* 移动端不需要额外下移，保持原有布局 */
     flex-shrink: 0;
     max-width: calc(100vw - 120px); /* 留出输入框和发送按钮的空间 */
     overflow-x: auto;
     overflow-y: visible; /* 允许上下内容溢出，防止截断 */
     scrollbar-width: none;
     -ms-overflow-style: none;
+    padding: 24px 4px; /* 增加上下内边距，防止旋转或放大的图片被截断遮挡 */
+    margin: -24px -4px; /* 负外边距抵消 padding 的影响，保持原本的布局位置 */
   }
 
   .reference-image-preview-inline::-webkit-scrollbar {
@@ -1709,12 +2069,11 @@ onUnmounted(() => {
     align-items: center;
     flex-wrap: nowrap;
     overflow-x: auto;
-    overflow-y: visible; /* 允许下拉菜单溢出显示 */
-    scrollbar-width: none !important;
-    -ms-overflow-style: none;
+    overflow-y: hidden;
+    scrollbar-width: none !important; /* Firefox 强制隐藏滚动条 */
+    -ms-overflow-style: none; /* IE and Edge 强制隐藏滚动条 */
     -webkit-overflow-scrolling: touch;
     margin-bottom: 8px;
-    padding-bottom: 4px; /* 为可能出现的轻微溢出留空间 */
   }
   
   /* Webkit 浏览器 (Chrome, Safari, iOS 等) 强制隐藏滚动条 */
@@ -1723,6 +2082,65 @@ onUnmounted(() => {
     width: 0 !important;
     height: 0 !important;
     background: transparent !important;
+  }
+
+  .model-dropdown-wrapper {
+    max-width: 100%;
+    flex: 0 1 auto; /* 允许压缩：模型名过长时自身省略，保证右侧设置按钮完整可见 */
+    min-width: 0;
+  }
+
+  .combined-settings-btn {
+    padding: 4px 12px;
+    height: 32px;
+    font-size: 13px;
+    max-width: 100%;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    min-width: 0; /* 覆盖桌面端 min-width: 100px，避免窄屏下挤压同行其他按钮 */
+    border-radius: 16px;
+    background-color: #ffffff; /* 增加背景色 */
+    border: 1px solid #e5e7eb; /* 增加边框 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* 增加轻微阴影提升立体感 */
+  }
+
+  .model-settings-btn {
+    justify-content: flex-start; /* 模型名字靠左，箭头靠右（如果有足够空间） */
+    min-width: 0; /* 覆盖桌面端 100px 最小宽度，允许模型名过长时收缩省略 */
+  }
+
+  .model-btn-content {
+    flex: 0 1 auto;
+    min-width: 0; /* 允许文本截断 */
+  }
+
+  .model-name-text {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 140px; /* 收紧手机端模型名宽度，为右侧设置按钮留出空间 */
+    line-height: 1.5;
+  }
+
+  .combined-settings-btn .divider {
+    margin: 0 6px;
+  }
+
+  .upload-btn-wrapper {
+    flex: 0 0 auto;
+  }
+
+  .ref-btn {
+    height: 32px;
+    font-size: 13px;
+    padding: 0 12px;
+    border-radius: 16px;
   }
 }
 
@@ -1870,6 +2288,7 @@ onUnmounted(() => {
   display: flex;
   gap: 12px;
   align-items: center;
+  margin-top: 4px;
 }
 
 .balance-recharge-btn,
@@ -2358,22 +2777,18 @@ onUnmounted(() => {
 .combined-settings-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: #f4f4f5;
-  border: 1px solid transparent;
-  border-radius: 20px;
-  padding: 6px 14px;
-  min-height: 34px;
-  height: auto;
-  font-size: 13px;
+  gap: 4px;
+  background: rgba(244, 244, 245, 0.95);
+  border: 1px solid rgba(228, 228, 231, 0.7);
+  border-radius: 14px;
+  padding: 2px 10px;
+  height: 26px;
+  font-size: 12px;
   color: #3f3f46;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: none;
-  flex: 0 0 auto;
-  white-space: nowrap;
-  overflow: visible; /* 防止文字被上下遮挡 */
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
 .combined-settings-btn:hover {
@@ -2387,7 +2802,7 @@ onUnmounted(() => {
 }
 
 .combined-settings-btn .el-icon {
-  font-size: 15px;
+  font-size: 13px;
   color: #71717a;
   transition: color 0.25s ease;
 }
@@ -2399,6 +2814,7 @@ onUnmounted(() => {
 .combined-settings-btn .btn-text {
   display: inline-flex;
   align-items: center;
+  line-height: normal;
 }
 
 .combined-settings-btn .divider {
@@ -2827,35 +3243,36 @@ onUnmounted(() => {
 
 
 /* Prompts Gallery 风格瀑布流/网格 */
-.explore-masonry {
-  columns: 5;
-  column-gap: 20px;
+.explore-masonry-flex {
+  display: flex;
+  flex-direction: row;
   width: 100%;
-  min-height: 50vh; /* 给予一个最小高度，防止数据清空时产生高度坍塌抖动 */
+  gap: 20px;
+  min-height: 50vh;
 }
 
-@media (max-width: 1600px) {
-  .explore-masonry {
-    columns: 4;
-  }
-}
-
-@media (max-width: 1200px) {
-  .explore-masonry {
-    columns: 3;
-  }
+.masonry-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 20px;
+  min-width: 0; /* 防止内容撑破 flex 容器 */
 }
 
 @media (max-width: 800px) {
-  .explore-masonry {
-    columns: 2;
+  .explore-masonry-flex {
+    gap: 8px;
+    padding: 0;
+  }
+  .masonry-column {
+    gap: 8px;
   }
 }
 
 /* 提示词卡片样式 (类似 lexica.art / promptsref) */
 .prompt-card {
   break-inside: avoid;
-  margin-bottom: 20px;
+  margin-bottom: 0; /* 改用 gap 控制间距 */
   position: relative;
   border-radius: 12px;
   overflow: hidden;
@@ -2880,6 +3297,15 @@ onUnmounted(() => {
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* 让占位符的高度自适应撑开（使用一个大概的比例），当真实图片加载后占位符消失，图片自然撑开真实高度 */
+.card-image :deep(.el-image__placeholder),
+.card-image :deep(.el-image__error) {
+  position: relative;
+  width: 100%;
+  height: auto !important;
+  aspect-ratio: 3 / 4; /* 默认使用 3:4 比例撑开 */
+}
+
 .prompt-card:hover .card-image {
   transform: scale(1.08);
 }
@@ -2892,6 +3318,31 @@ onUnmounted(() => {
   justify-content: center;
   color: #9ca3af;
   font-size: 32px;
+  background-color: #f3f4f6; /* 添加背景色，让占位符更清晰 */
+}
+
+/* 使用骨架屏闪烁效果替代原本的 Loading 图标，避免图标被遮挡切断 */
+.shimmer-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: el-skeleton-loading 1.4s ease infinite;
+}
+
+@keyframes el-skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* 如果 .is-loading 在占位符内部没有正常旋转，确保其样式正确 */
+.image-placeholder .is-loading {
+  animation: loading-rotate 2s linear infinite;
+  color: #3b82f6;
 }
 
 /* 悬浮遮罩和内容 */
@@ -2905,6 +3356,8 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: flex-end;
   padding: 20px;
+  /* 确保覆盖层不会因为内部元素的动画而出现裁剪或闪烁 */
+  will-change: opacity;
 }
 
 .prompt-card:hover .card-overlay {
@@ -2915,6 +3368,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* 防止内部绝对定位元素或者动画导致高度坍塌或溢出 */
+  position: relative;
+  z-index: 2;
 }
 
 .card-prompt-text {
@@ -2930,6 +3386,10 @@ onUnmounted(() => {
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   transform: translateY(10px);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 添加此属性解决部分浏览器动画渲染bug */
+  will-change: transform;
+  /* 确保文本在动画过程中不会改变其布局属性 */
+  position: relative;
 }
 
 .prompt-card:hover .card-prompt-text {
@@ -2942,6 +3402,12 @@ onUnmounted(() => {
   transform: translateY(10px);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transition-delay: 0.05s;
+  /* 添加此属性解决部分浏览器动画渲染bug */
+  will-change: transform;
+  /* 确保按钮在动画过程中不会改变其布局属性 */
+  position: relative;
+  /* 防止与文本重叠，确保至少有间距 */
+  margin-top: auto;
 }
 
 .prompt-card:hover .overlay-actions {
@@ -3061,14 +3527,12 @@ onUnmounted(() => {
     color: #165dff;
   }
   
-  .explore-masonry {
-    columns: 2; /* 移动端下保持两列 */
-    column-gap: 8px;
+  .explore-masonry-flex {
     padding: 0; /* 给瀑布流整体加一点边距，避免贴边太死 */
   }
   
   .prompt-card {
-    margin-bottom: 8px;
+    margin-bottom: 0; /* flex gap 控制间距，取消 margin */
     border-radius: 10px; /* 移动端圆角再小一点 */
   }
   
@@ -3090,6 +3554,462 @@ onUnmounted(() => {
     font-size: 20px;
     -webkit-tap-highlight-color: transparent;
     outline: none;
+  }
+}
+
+/* 高级版灵感详情弹窗 CSS */
+:deep(.advanced-inspiration-dialog) {
+  border-radius: 24px !important;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  background-color: #ffffff !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.advanced-inspiration-dialog .el-dialog__header),
+:deep(.advanced-inspiration-dialog .el-dialog__body),
+:deep(.advanced-inspiration-dialog .el-dialog__footer) {
+  padding: 0 !important;
+  margin: 0 !important;
+  display: none; /* 隐藏默认结构 */
+}
+
+/* 强制显示自定义body，因为它被包裹在 .el-dialog__body 里 */
+:deep(.advanced-inspiration-dialog .el-dialog__body) {
+  display: block !important;
+}
+
+.advanced-split-layout {
+  display: flex;
+  flex-direction: row;
+  height: 600px;
+  width: 100%;
+}
+
+.advanced-left-image {
+  flex: 1.5; /* 左侧占更大比例 */
+  background-color: #0f172a; /* 深夜蓝/黑色，让图片显得更高级 */
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.advanced-blur-bg {
+  position: absolute;
+  inset: -40px; /* 扩展边缘防止模糊露底 */
+  background-size: cover;
+  background-position: center;
+  filter: blur(30px) brightness(0.4) saturate(1.2);
+  z-index: 1;
+  transform: scale(1.1); /* 放大一点避免边缘发白 */
+  transition: all 0.3s ease;
+}
+
+.advanced-main-image {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+:deep(.advanced-main-image .el-image__inner) {
+  object-fit: contain !important;
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.advanced-main-image:hover .el-image__inner) {
+  transform: scale(1.03);
+}
+
+.advanced-image-skeleton {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.8) 100%);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.skeleton-pulse-ring {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0) 70%);
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-pulse-ring.delay {
+  animation-delay: 1s;
+}
+
+.skeleton-glow-icon {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8));
+  z-index: 2;
+  animation: float-icon 3s ease-in-out infinite;
+}
+
+.skeleton-text {
+  z-index: 2;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.4) 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: text-shine 2s linear infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes float-icon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes text-shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.advanced-right-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  min-width: 340px; /* 保证右侧不要太窄 */
+}
+
+.advanced-split-layout:not(.has-image) .advanced-right-content {
+  flex: 1;
+}
+
+.advanced-right-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 16px;
+}
+
+.advanced-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.advanced-title .el-icon {
+  color: #111827;
+  font-size: 20px;
+}
+
+.desktop-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.desktop-close-btn:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+  transform: rotate(90deg);
+}
+
+.mobile-close-btn {
+  display: none; /* PC端隐藏 */
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+}
+
+.mobile-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.advanced-right-body {
+  flex: 1;
+  padding: 0 24px;
+  overflow-y: auto;
+}
+
+/* 优化 PC 端详情页内容的滚动条 */
+.advanced-right-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.advanced-right-body::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 3px;
+}
+
+.advanced-right-body::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+.advanced-right-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.advanced-prompt-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.advanced-prompt-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 1px;
+}
+
+.advanced-prompt-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1f2937;
+  background-color: #f9fafb;
+  padding: 16px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid #f3f4f6;
+}
+
+.advanced-right-footer {
+  padding: 20px 24px 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.advanced-btn {
+  height: 48px !important;
+  border-radius: 24px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  flex: 1;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.advanced-btn.copy-btn {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.advanced-btn.copy-btn:hover {
+  background-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.advanced-btn.use-btn {
+  background-color: #111827 !important;
+  color: #ffffff !important;
+}
+
+.advanced-btn.use-btn:hover {
+  background-color: #374151 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+.advanced-btn.use-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .advanced-split-layout {
+    flex-direction: column;
+    height: auto;
+    max-height: 85vh;
+  }
+  
+  .advanced-left-image {
+    flex: none;
+    height: 320px; /* 移动端给一个固定高度 */
+    border-right: none;
+  }
+  
+  .advanced-main-image {
+    padding: 16px;
+  }
+  
+  .desktop-close-btn {
+    display: none;
+  }
+  
+  .mobile-close-btn {
+    display: flex;
+  }
+  
+  .advanced-right-content {
+    flex: none;
+    min-width: auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(85vh - 320px); /* 限制右侧内容区的总高度为弹窗剩余高度 */
+  }
+  
+  .advanced-right-body {
+    padding-top: 16px;
+    flex: 1; /* 让主体部分占据剩余空间 */
+    overflow-y: auto; /* 允许滚动 */
+    max-height: none; /* 移除之前的 max-height 限制，改用 flex: 1 控制 */
+  }
+  
+  .advanced-right-footer {
+    padding: 16px 24px 24px;
+    flex-shrink: 0; /* 防止底部按钮区被压缩 */
+    background-color: #ffffff; /* 确保背景色为白色，防止内容透出 */
+    position: sticky; /* 固定在底部 */
+    bottom: 0;
+    z-index: 10;
+  }
+}
+</style>
+<style scoped>
+@media (max-width: 768px) {
+  :deep(.chat-input) {
+    min-height: 36px !important;
+  }
+  
+  :deep(.chat-input .el-textarea__inner) {
+    min-height: 36px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    display: block !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* 移动端滚动条样式 */
+  :deep(.chat-input .el-textarea__inner::-webkit-scrollbar) {
+    width: 4px;
+  }
+  :deep(.chat-input .el-textarea__inner::-webkit-scrollbar-thumb) {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+  }
+  :deep(.chat-input .el-textarea__inner::-webkit-scrollbar-track) {
+    background: transparent;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input) {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk .input-box {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input.has-references) {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk .input-box.has-refs {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input.has-references .el-textarea__inner) {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    max-height: 36px !important;
+    margin-left: -8px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner) {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 13px !important;
+    line-height: 20px !important;
+    display: block !important;
+    max-height: 36px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    margin-left: -8px !important; /* 手机端输入框向左移动更多，靠近图片 */
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner::placeholder) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 20px !important;
+  }
+  
+  :deep(.chat-input .el-textarea__inner::placeholder) {
+    line-height: 20px !important;
+  }
+
+  .input-box {
+    min-height: 36px !important;
+    padding: 0px 0px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk .input-box {
+    min-height: 28px !important;
+    padding: 0px 0px !important;
   }
 }
 </style>

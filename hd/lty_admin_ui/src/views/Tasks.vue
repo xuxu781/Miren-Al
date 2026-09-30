@@ -415,15 +415,19 @@ const getErrorMessage = (logContent?: string, status?: number) => {
   
   if (safeText.includes('safety') || safeText.includes('policy') || safeText.includes('violation') || 
       safeText.includes('blocked') || safeText.includes('nsfw') || safeText.includes('敏感') || 
-      safeText.includes('违规') || safeText.includes('prompt') || safeText.includes('bad request') || 
+      safeText.includes('违规')) {
+    return status === 3 ? '该张图片生成失败(触发过滤)' : '提示词可能包含违规或不支持的内容，请修改后重试'
+  }
+  
+  if (safeText.includes('prompt') || safeText.includes('bad request') || 
       safeText.includes('status: 400') || safeText.includes('error status (task 1): 400')) {
-    return status === 3 ? '该张图片生成失败(触发过滤或网络波动)' : '提示词可能包含违规或不支持的内容，请修改后重试'
+    return status === 3 ? '该张图片生成失败(网络波动)' : '生成失败已退款，系统异常请联系官方大人'
   }
   
   if (safeText.includes('invalid token') || safeText.includes('unauthorized') || safeText.includes('balance') || 
       safeText.includes('insufficient') || safeText.includes('quota') || safeText.includes('api_key') || 
       safeText.includes('key') || safeText.includes('401') || safeText.includes('402')) {
-    return status === 3 ? '接口不稳定，部分生成失败' : '接口请求失败或系统繁忙，请稍后重试'
+    return status === 3 ? '部分生成失败已退款，系统异常请联系官方大人' : '生成失败已退款，系统异常请联系官方大人'
   }
   
   if (safeText.includes('timeout') || safeText.includes('network') || safeText.includes('中断') || safeText.includes('超时')) {

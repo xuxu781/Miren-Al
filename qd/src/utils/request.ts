@@ -6,7 +6,7 @@ let apiUrl = ''
 if ((window as any).APP_CONFIG?.API_BASE_URL) {
   apiUrl = (window as any).APP_CONFIG.API_BASE_URL
 } else {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')) {
     apiUrl = window.location.protocol + "//" + window.location.hostname + ":8088"
   } else {
     apiUrl = window.location.origin

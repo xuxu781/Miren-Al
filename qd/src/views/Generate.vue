@@ -10,7 +10,7 @@
       <img :src="siteLogo" alt="logo" class="logo-img"/>
     </div>
     <div class="nav-items">
-      <div class="nav-item" :class="{ active: route.path === '/' }" title="创作" @click="router.push('/')">
+      <div class="nav-item" :class="{ active: route.path === '/' }" title="创作" @click.stop="handleNavigateToChat">
         <el-icon><MagicStick /></el-icon>
         <span>创作</span>
       </div>
@@ -122,37 +122,28 @@
             @dragover.prevent
             @drop.stop="handleDropOnSession($event, session, index, group.id)"
           >
-            <el-tooltip
-              effect="dark"
-              :placement="isMobileMenuOpen ? 'bottom' : 'right'"
-              :show-after="300"
-            >
-              <template #content>
-                <div style="line-height: 1.5; max-width: 300px; word-break: break-all;">
-                  <div style="font-weight: bold; margin-bottom: 4px; white-space: normal;">{{ session.title || '图片生成任务' }}</div>
-                  <div style="color: #ccc; font-size: 12px;">更新于: {{ formatTime(session.updated_at || session.created_at) }}</div>
-                </div>
-              </template>
-              <div class="history-info">
-                <div class="history-thumbnail">
-                  <el-icon v-if="generatingSessions.includes(session.session_id) || session.status === 0" class="is-loading"><Loading /></el-icon>
-                  <img v-else-if="session.image_url" :src="formatImageUrl(session.image_url)" class="thumbnail-img" />
-                  <el-icon v-else><Picture /></el-icon>
-                </div>
-                
-                <div class="history-content" v-if="editingSessionId === session.session_id">
-                  <el-input
-                    v-model="editSessionName"
-                    size="small"
-                    @blur="saveSessionName(session)"
-                    @keyup.enter="saveSessionName(session)"
-                    @click.stop
-                    ref="editInputRef"
-                  />
-                </div>
-                <span v-else class="history-text">{{ session.title || '图片生成任务' }}</span>
+            <div class="history-info">
+              <div class="history-thumbnail">
+                <el-icon v-if="generatingSessions.includes(session.session_id) || session.status === 0" class="is-loading"><Loading /></el-icon>
+                <img v-else-if="session.image_url" :src="formatImageUrl(session.image_url)" class="thumbnail-img" />
+                <el-icon v-else><Picture /></el-icon>
               </div>
-            </el-tooltip>
+              
+              <div class="history-content" v-if="editingSessionId === session.session_id">
+                <el-input
+                  v-model="editSessionName"
+                  size="small"
+                  @blur="saveSessionName(session)"
+                  @keyup.enter="saveSessionName(session)"
+                  @click.stop
+                  ref="editInputRef"
+                />
+              </div>
+              <div v-else class="history-text-wrapper">
+                <span class="history-text">{{ session.title || '图片生成任务' }}</span>
+                <span class="history-time">{{ formatChatTime(session.updated_at || session.created_at) }}</span>
+              </div>
+            </div>
             
             <div class="history-actions" v-if="editingSessionId !== session.session_id" @click.stop>
               <el-dropdown trigger="click" @command="(cmd: string) => handleSessionCommand(cmd, session)" @visible-change="(v: boolean) => handleDropdownVisible(v, session.session_id)">
@@ -231,37 +222,28 @@
           @dragover.prevent
           @drop.stop="handleDropOnSession($event, session, index, 0)"
         >
-          <el-tooltip
-            effect="dark"
-            :placement="isMobileMenuOpen ? 'bottom' : 'right'"
-            :show-after="300"
-          >
-            <template #content>
-              <div style="line-height: 1.5; max-width: 300px; word-break: break-all;">
-                <div style="font-weight: bold; margin-bottom: 4px; white-space: normal;">{{ session.title || '图片生成任务' }}</div>
-                <div style="color: #ccc; font-size: 12px;">更新于: {{ formatTime(session.updated_at || session.created_at) }}</div>
-              </div>
-            </template>
-            <div class="history-info">
-              <div class="history-thumbnail">
-                <el-icon v-if="generatingSessions.includes(session.session_id) || session.status === 0" class="is-loading"><Loading /></el-icon>
-                <img v-else-if="session.image_url" :src="formatImageUrl(session.image_url)" class="thumbnail-img" />
-                <el-icon v-else><Picture /></el-icon>
-              </div>
-              
-              <div class="history-content" v-if="editingSessionId === session.session_id">
-                <el-input
-                  v-model="editSessionName"
-                  size="small"
-                  @blur="saveSessionName(session)"
-                  @keyup.enter="saveSessionName(session)"
-                  @click.stop
-                  ref="editInputRef"
-                />
-              </div>
-              <span v-else class="history-text">{{ session.title || '图片生成任务' }}</span>
+          <div class="history-info">
+            <div class="history-thumbnail">
+              <el-icon v-if="generatingSessions.includes(session.session_id) || session.status === 0" class="is-loading"><Loading /></el-icon>
+              <img v-else-if="session.image_url" :src="formatImageUrl(session.image_url)" class="thumbnail-img" />
+              <el-icon v-else><Picture /></el-icon>
             </div>
-          </el-tooltip>
+            
+            <div class="history-content" v-if="editingSessionId === session.session_id">
+              <el-input
+                v-model="editSessionName"
+                size="small"
+                @blur="saveSessionName(session)"
+                @keyup.enter="saveSessionName(session)"
+                @click.stop
+                ref="editInputRef"
+              />
+            </div>
+            <div v-else class="history-text-wrapper">
+              <span class="history-text">{{ session.title || '图片生成任务' }}</span>
+              <span class="history-time">{{ formatChatTime(session.updated_at || session.created_at) }}</span>
+            </div>
+          </div>
           
           <div class="history-actions" v-if="editingSessionId !== session.session_id" @click.stop>
             <el-dropdown trigger="click" @command="(cmd: string) => handleSessionCommand(cmd, session)" @visible-change="(v: boolean) => handleDropdownVisible(v, session.session_id)">
@@ -419,44 +401,83 @@
 
   <!-- Chat / Result Area -->
   <div class="content-area" ref="contentAreaRef" @scroll="handleContentScroll">
-    <!-- Welcome Screen -->
-    <div v-if="isNewTaskMode || (!isInitialLoading && sessionList.length === 0 && (!activeSessionId || !tempTasksMap[activeSessionId] || tempTasksMap[activeSessionId].length === 0))" class="welcome-screen">
-      <div class="welcome-logo">
-        <el-icon :size="48" color="#333"><MagicStick /></el-icon>
-      </div>
-      <h1 class="welcome-title">使用 AI 图片生成工作</h1>
-      <p class="welcome-desc">
-        帮助你将想法转化为精美的图片，输出专业的可视化结果。
-      </p>
-      <div class="suggestion-cards">
-        <div class="suggestion-card" @click="useSuggestion('一只可爱的猫咪在太空遨游')">
-          <el-icon><Sunny /></el-icon>
-          <span>一只可爱的猫咪在太空遨游</span>
-        </div>
-        <div class="suggestion-card" @click="useSuggestion('赛博朋克风格的未来城市，霓虹灯闪烁')">
-          <el-icon><Star /></el-icon>
-          <span>赛博朋克风格的未来城市</span>
-        </div>
-      </div>
-    </div>
+    <!-- Welcome / Empty Session Screen -->
+    <div v-if="isNewTaskMode || (!isInitialLoading && sessionList.length === 0 && (!activeSessionId || !tempTasksMap[activeSessionId] || tempTasksMap[activeSessionId].length === 0)) || (!isTasksLoading && (!activeSessionId || !tempTasksMap[activeSessionId] || tempTasksMap[activeSessionId].length === 0) && chatList.length === 0)" class="welcome-screen" ref="welcomeScreenRef">
+      <!-- 装饰性氛围光斑 -->
+      <div class="welcome-bg-orb orb-1"></div>
+      <div class="welcome-bg-orb orb-2"></div>
+      <div class="welcome-bg-orb orb-3"></div>
 
-    <!-- Empty Session Screen -->
-    <div v-else-if="!isTasksLoading && (!activeSessionId || !tempTasksMap[activeSessionId] || tempTasksMap[activeSessionId].length === 0) && chatList.length === 0" class="empty-session-screen">
-      <el-empty description="当前会话内容已清空，快来探索生成新图片吧！">
-        <template #image>
-          <div class="custom-empty-icon">
-            <div class="icon-layer layer-1"></div>
-            <div class="icon-layer layer-2"></div>
-            <div class="icon-layer layer-3">
-              <el-icon><MagicStick /></el-icon>
+      <div class="welcome-greeting-container">
+        <h1 class="welcome-greeting">
+          <template v-if="isNewTaskMode || (!isInitialLoading && sessionList.length === 0 && (!activeSessionId || !tempTasksMap[activeSessionId] || tempTasksMap[activeSessionId].length === 0))">
+            <span class="greeting-main">{{ greeting.main }}</span>
+            <span class="greeting-sub">{{ greeting.sub }}</span>
+          </template>
+          <template v-else>
+            <span class="greeting-main">当前会话内容已清空</span>
+            <span class="greeting-sub">快去探索生成新图片吧！</span>
+          </template>
+        </h1>
+      </div>
+      
+      <!-- 灵感发现卡片，放置在欢迎语下方，远离底部输入框 -->
+      <div v-if="isWelcomeInspirationsLoading" class="arc-swiper-container arc-swiper-skeleton">
+        <div class="arc-swiper-content">
+          <div
+            v-for="index in 5"
+            :key="'skeleton-' + index"
+            class="arc-swiper-item"
+            :style="getArcItemStyle(index - 1, 5)"
+          >
+            <div class="arc-swiper-card skeleton-card">
+              <div class="skeleton-bg" style="width: 100%; height: 100%; border-radius: 24px; border: 1px solid rgba(255,255,255,0.2);"></div>
             </div>
           </div>
-        </template>
-      </el-empty>
+        </div>
+      </div>
+      <div class="arc-swiper-container" v-else-if="welcomeInspirations.length > 0"
+           @mousedown.prevent="startArcDrag" 
+           @mousemove="onArcDrag" 
+           @mouseup="endArcDrag" 
+           @mouseleave="endArcDragAndResume" 
+           @touchstart="startArcDrag" 
+           @touchmove="onArcDrag" 
+           @touchend="endArcDrag"
+           @mouseenter="stopAutoPlay">
+        <div class="arc-swiper-content" :style="{ transform: `rotate(${arcRotation}deg)`, transition: isDraggingArc ? 'none' : 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)' }">
+          <div
+            v-for="(item, index) in welcomeInspirations"
+            :key="item.id"
+            class="arc-swiper-item"
+            :style="getArcItemStyle(index)"
+          >
+            <div class="arc-swiper-card" @click="useSuggestion(item)">
+              <div class="recommend-item-sample" :style="{ backgroundImage: `url(${item.image_url})` }">
+                <div class="recommend-item-content">
+                  <div class="recommend-item-title">
+                    <div class="recommend-item-title-icon">
+                      <el-icon><Picture /></el-icon>
+                    </div>
+                    <span class="recommend-item-title-text">灵感发现</span>
+                  </div>
+                  <div class="recommend-item-image-content">
+                    <div class="recommend-item-image-content-left">{{ item.content }}</div>
+                    <div class="recommend-item-image-content-btn">{{ item.need_reference_image ? '选择参考图' : '去试试' }}</div>
+                  </div>
+                </div>
+                <div class="recommend-mask-image" :style="{ background: `linear-gradient(transparent 0%, ${getMaskColor(index)} 55%, ${getMaskColor(index, 1)} 100%)` }"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+
+
     <!-- Result Screen (Chat Flow) -->
-    <div v-else class="result-screen">
+    <div v-else class="result-screen" :class="{ 'has-refs-padding': form.reference_image && form.reference_image.length > 0 }">
       <div v-if="isTasksLoading && currentTaskPage === 1" class="initial-tasks-loading">
         <!-- Skeleton Group 1 -->
         <div class="skeleton-group" style="opacity: 0.2;">
@@ -684,8 +705,8 @@
                           :initial-index="idx"
                           :preview-teleported="true"
                           :hide-on-click-modal="true"
-                          fit="contain"
-                          class="generated-image"
+                        fit="cover"
+                        class="generated-image"
                           @load="scrollToBottom(false)"
                         >
                           <template #error>
@@ -708,7 +729,13 @@
                         <div class="placeholder-scan"></div>
                         <div class="placeholder-content">
                           <el-icon class="generating-spinner is-loading"><Loading /></el-icon>
-                          <span class="generating-text">AI 渲染中...</span>
+                          <span class="generating-text">
+                            <span class="text-slide" :class="`slide-${loadingTextIndex % (task.resolution && /([2-9]|[1-9][0-9])[Kk]/.test(task.resolution) ? 3 : 2)}`">
+                              <span v-if="loadingTextIndex % (task.resolution && /([2-9]|[1-9][0-9])[Kk]/.test(task.resolution) ? 3 : 2) === 0">AI 渲染中...</span>
+                              <span v-else-if="loadingTextIndex % (task.resolution && /([2-9]|[1-9][0-9])[Kk]/.test(task.resolution) ? 3 : 2) === 1">{{ funFacts[Math.floor(loadingTextIndex / (task.resolution && /([2-9]|[1-9][0-9])[Kk]/.test(task.resolution) ? 3 : 2)) % funFacts.length] }}</span>
+                              <span v-else>使用{{ task.resolution }}渲染图片较慢请耐心等待~</span>
+                            </span>
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -724,7 +751,7 @@
                         :initial-index="idx"
                         :preview-teleported="true"
                         :hide-on-click-modal="true"
-                        fit="contain"
+                        fit="cover"
                         class="generated-image"
                         @load="scrollToBottom(false)"
                       >
@@ -743,9 +770,9 @@
                   
                   <!-- Render failed placeholders for partial success -->
                   <div v-for="n in Math.max(0, (task.num_images || 1) - parseImageUrls(task.image_url).length)" :key="`failed-${n}`" class="grid-item" style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-                    <div class="image-slot" :style="getAspectRatioStyle(task.size)" style="background-color: #fef2f2; border: 1px dashed #fca5a5; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; width: 100%; height: 100%; flex: 1; min-height: 120px; box-sizing: border-box; padding: 8px; text-align: center;">
+                    <div class="image-slot" :style="getAspectRatioStyle(task.size)" style="background-color: #fef2f2; border: 1px dashed #fca5a5; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; width: 100%; height: 100%; flex: 1; min-height: 0; box-sizing: border-box; padding: 8px; text-align: center; overflow: hidden;">
                       <el-icon color="#f87171" :size="20" style="flex-shrink: 0; margin-bottom: 4px;"><CircleClose /></el-icon>
-                      <span style="font-size: 11px; color: #ef4444; word-break: break-word; white-space: normal; line-height: 1.2; max-width: 100%;">生成失败已退款<br/><br/><span style="opacity: 0.8;">{{ getErrorMessage(task.log_content, task.status) }}</span></span>
+                      <span style="font-size: 11px; color: #ef4444; line-height: 1.2; max-width: 100%; cursor: pointer; transition: opacity 0.2s;" @click.stop="showErrorDialog(getErrorMessage(task.log_content, task.status))" class="hover-opacity-80">生成失败已退款<br/><span style="opacity: 0.8; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; word-break: break-all;">{{ getErrorMessage(task.log_content, task.status) }}</span></span>
                     </div>
                   </div>
                 </div>
@@ -756,21 +783,34 @@
                   </span>
                 </div>
               </div>
-              <div v-else class="image-slot" style="min-height: 100px;">
-                  <el-icon color="#f56c6c"><Warning /></el-icon>
-                  <span style="font-size: 14px; margin-top: 10px; color: #f56c6c; white-space: pre-wrap; word-break: break-all;">
-    {{ getErrorMessage(task.log_content, task.status) }}
-  </span>
+              <div v-else class="image-result-grid">
+                <div :class="['image-grid-container', `grid-count-${task.num_images || 1}`]">
+                  <!-- Render failed placeholders for all requested images -->
+                  <div v-for="n in (task.num_images || 1)" :key="`total-failed-${n}`" class="grid-item" style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+                    <div class="image-slot" :style="getAspectRatioStyle(task.size)" style="background-color: #fef2f2; border: 1px dashed #fca5a5; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; width: 100%; height: 100%; flex: 1; min-height: 0; box-sizing: border-box; padding: 8px; text-align: center; overflow: hidden;">
+                      <el-icon color="#f87171" :size="20" style="flex-shrink: 0; margin-bottom: 4px;"><CircleClose /></el-icon>
+                      <span style="font-size: 11px; color: #ef4444; word-break: break-word; white-space: normal; line-height: 1.2; max-width: 100%; cursor: pointer; transition: opacity 0.2s;" @click.stop="showErrorDialog(getErrorMessage(task.log_content, task.status))" class="hover-opacity-80">
+                        <template v-if="task.status === 2 || task.status === 3">生成失败已退款</template>
+                        <template v-else>生成失败</template>
+                        <br/>
+                        <span style="opacity: 0.8; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; word-break: break-all;">{{ getErrorMessage(task.log_content, task.status) }}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="message-meta" style="justify-content: flex-start; margin-left: 17px; margin-top: 8px;">
+              </div>
+              <div class="message-meta action-bar-bottom">
                 <span v-if="task.status !== 0" class="meta-action-btn always-show" @click="regenerateTask(task)" title="重新生成">
                   <el-icon><RefreshRight /></el-icon>重新生成
                 </span>
                 <span v-if="task.status !== 0" class="meta-action-btn always-show" @click="reEditTask(task)" title="重新编辑">
                   <el-icon><EditPen /></el-icon>重新编辑
                 </span>
-                <el-dropdown v-if="task.status !== 0" trigger="click" @command="(cmd: string) => handleTaskCommand(cmd, task)">
+                <span v-if="task.status === 1 || task.status === 3" class="meta-action-btn always-show" @click="modifyImage(task)" title="修改图片">
+                  <el-icon><PictureRounded /></el-icon>修改图片
+                </span>
+                <el-dropdown v-if="task.status !== 0" trigger="click" @command="(cmd: string) => handleTaskCommand(cmd, task)" style="flex-shrink: 0;">
                   <span class="meta-action-btn always-show" style="margin-right: 0;" title="更多">
                     <el-icon><MoreFilled /></el-icon>
                   </span>
@@ -791,12 +831,12 @@
     </div>
   </div>
 
-    <!-- Input Area -->
-  <div class="input-area-wrapper" :class="{ 'is-shrunk': isInputShrunk }">
-    <div class="input-tools-container mobile-only">
-      <div class="input-tools">
-        
-        <el-dropdown class="model-dropdown-wrapper" trigger="click" placement="top-start" @command="(val: string) => form.series_id = val">
+  <!-- Input Area -->
+  <div class="input-area-wrapper" ref="inputWrapperRef" :class="{ 'is-shrunk': isInputShrunk }" :style="{ '--keyboard-offset': `${keyboardOffset}px` }">
+    <div class="input-container">
+      <div class="input-tools-container">
+        <div class="input-tools">
+          <el-dropdown class="model-dropdown-wrapper" trigger="click" placement="top-start" :teleported="true" @command="(val: string) => form.series_id = val">
           <button class="combined-settings-btn model-settings-btn" type="button">
             <div class="model-btn-content">
               <el-icon class="cpu-icon"><Cpu /></el-icon>
@@ -821,7 +861,11 @@
                 :class="{ 'is-active-model': form.series_id === model.series_id }"
               >
                 <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
-                    <span>{{ model.name }}</span>
+                    <div style="display: flex; align-items: center;">
+                      <el-icon v-if="form.series_id === model.series_id" style="color: #3b82f6; font-size: 14px; margin-right: 6px; font-weight: bold;"><Check /></el-icon>
+                      <span v-else style="width: 20px; display: inline-block;"></span>
+                      <span>{{ model.name }}</span>
+                    </div>
                     <span v-if="model.activity_tag" class="shimmer-tag" :style="{ fontSize: '11px', color: '#fff', background: model.activity_tag_color || '#10b981', padding: '2px 6px', borderRadius: '4px', lineHeight: '1.2', whiteSpace: 'nowrap' }">{{ model.activity_tag }}</span>
                     <span v-else-if="hasFreeResolution(model)" class="shimmer-tag" style="font-size: 11px; color: #fff; background: #10b981; padding: 2px 6px; border-radius: 4px; line-height: 1.2; white-space: nowrap;">限时免费</span>
                   </div>
@@ -831,7 +875,11 @@
                 command="default"
                 :class="{ 'is-active-model': form.series_id === 'default' }"
               >
-                默认模型
+                <div style="display: flex; align-items: center;">
+                  <el-icon v-if="form.series_id === 'default'" style="color: #3b82f6; font-size: 14px; margin-right: 6px; font-weight: bold;"><Check /></el-icon>
+                  <span v-else style="width: 20px; display: inline-block;"></span>
+                  <span>默认模型</span>
+                </div>
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -887,119 +935,7 @@
             </div>
           </div>
         </el-popover>
-      </div>
-    </div>
-    <div class="input-container">
-      <!-- Reference Image Preview -->
-      <div class="reference-image-preview" v-if="false">
-        <div class="preview-list">
-          <div class="preview-container" v-for="(img, index) in form.reference_image" :key="index" :style="{ transform: `rotate(${index === 0 ? 8 : (index === 1 ? -4 : 22)}deg)`, zIndex: index, left: `${index * 24}px` }">
-            <img :src="img" class="preview-img" />
-            <div class="remove-btn" @click.stop="clearReferenceImage(index)">
-              <el-icon><Close /></el-icon>
-            </div>
-          </div>
-          <div class="reference-upload-item" @click.stop="triggerUpload" v-if="form.reference_image.length < currentModelMaxRefImages" :style="{ transform: `rotate(${form.reference_image.length === 0 ? 8 : (form.reference_image.length === 1 ? -4 : 22)}deg)`, zIndex: form.reference_image.length, left: `${form.reference_image.length * 24}px` }">
-            <div class="reference-upload-content">
-              <svg width="1em" height="1em" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" role="presentation" xmlns="http://www.w3.org/2000/svg" class="upload-icon-svg"><g><path data-follow-fill="currentColor" d="M10.8 20a1.2 1.2 0 0 0 2.4 0v-6.8H20a1.2 1.2 0 1 0 0-2.4h-6.8V4a1.2 1.2 0 0 0-2.4 0v6.8H4a1.2 1.2 0 0 0 0 2.4h6.8V20Z" clip-rule="evenodd" fill-rule="evenodd" fill="currentColor"></path></g></svg>
-            </div>
-          </div>
         </div>
-      </div>
-      
-      <div class="input-tools desktop-only">
-        
-        <el-dropdown class="model-dropdown-wrapper" trigger="click" placement="top-start" @command="(val: string) => form.series_id = val">
-          <button class="combined-settings-btn model-settings-btn" type="button">
-            <div class="model-btn-content">
-              <el-icon class="cpu-icon"><Cpu /></el-icon>
-              <span class="btn-text model-name-text" :title="availableModels.find(m => m.series_id === form.series_id)?.name || '默认模型'">
-                {{ availableModels.find(m => m.series_id === form.series_id)?.name || '默认模型' }}
-              </span>
-              <span v-if="availableModels.find(m => m.series_id === form.series_id)?.activity_tag" class="shimmer-tag" :style="{ fontSize: '10px', color: '#fff', background: availableModels.find(m => m.series_id === form.series_id)?.activity_tag_color || '#10b981', padding: '2px 4px', borderRadius: '4px', marginLeft: '6px', whiteSpace: 'nowrap', flexShrink: 0 }">
-                {{ availableModels.find(m => m.series_id === form.series_id)?.activity_tag }}
-              </span>
-              <span v-else-if="availableModels.find(m => m.series_id === form.series_id) && hasFreeResolution(availableModels.find(m => m.series_id === form.series_id))" class="shimmer-tag" style="font-size: 10px; color: #fff; background: #10b981; padding: 2px 4px; border-radius: 4px; margin-left: 6px; white-space: nowrap; flex-shrink: 0;">
-                限时免费
-              </span>
-            </div>
-            <el-icon class="arrow-icon"><ArrowDown /></el-icon>
-          </button>
-          <template #dropdown>
-            <el-dropdown-menu class="model-dropdown-menu">
-              <el-dropdown-item 
-                v-for="model in availableModels" 
-                :key="model.series_id" 
-                :command="model.series_id"
-                :class="{ 'is-active-model': form.series_id === model.series_id }"
-              >
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
-                    <span>{{ model.name }}</span>
-                    <span v-if="model.activity_tag" class="shimmer-tag" :style="{ fontSize: '11px', color: '#fff', background: model.activity_tag_color || '#10b981', padding: '2px 6px', borderRadius: '4px', lineHeight: '1.2', whiteSpace: 'nowrap' }">{{ model.activity_tag }}</span>
-                    <span v-else-if="hasFreeResolution(model)" class="shimmer-tag" style="font-size: 11px; color: #fff; background: #10b981; padding: 2px 6px; border-radius: 4px; line-height: 1.2; white-space: nowrap;">限时免费</span>
-                  </div>
-              </el-dropdown-item>
-              <el-dropdown-item 
-                v-if="availableModels.length === 0" 
-                command="default"
-                :class="{ 'is-active-model': form.series_id === 'default' }"
-              >
-                默认模型
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        
-        <el-popover ref="mobilePopoverRef" placement="top-start" :width="windowWidth <= 768 ? windowWidth - 32 : 360" trigger="click" popper-class="settings-popover" :popper-options="{ modifiers: [{ name: 'preventOverflow', options: { padding: 16 } }] }">
-          <template #reference>
-            <button class="combined-settings-btn" type="button">
-              <el-icon><Crop /></el-icon>
-              <span class="btn-text">
-                <template v-if="currentModelRatios.length > 0">
-                  {{ form.aspect_ratio || 'auto' }}
-                  <div class="divider"></div>
-                </template>
-                {{ form.resolution || '1K' }}
-                <template v-if="currentModelImageCounts.length > 0">
-                  <div class="divider"></div>
-                  <span>{{ form.num_images || 1 }}<span class="unit-text">张</span></span>
-                </template>
-              </span>
-            </button>
-          </template>
-          <div class="settings-panel">
-            <div class="setting-item" v-if="currentModelRatios.length > 0">
-              <div class="setting-label">比例</div>
-              <div class="setting-options">
-                <div class="option-btn" v-for="ratio in currentModelRatios" :key="ratio" :class="{ active: form.aspect_ratio === ratio }" @click="form.aspect_ratio = ratio">
-                  {{ ratio }}
-                </div>
-              </div>
-            </div>
-            <div class="setting-item">
-              <div class="setting-label">分辨率</div>
-              <div class="setting-options">
-                <div class="option-btn" v-for="res in currentModelResolutions" :key="res" :class="{ active: form.resolution === res }" @click="form.resolution = res">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span>{{ res }}</span>
-                    <span v-if="getTierConfigForRes(currentModelInfo, res, 'enabled', true) === 'maintenance'" class="shimmer-tag" style="font-size: 11px; color: #fff; background: #9ca3af; padding: 0 4px; border-radius: 4px; line-height: 1.4; white-space: nowrap;">维护中</span>
-                    <span v-else-if="getTierConfigForRes(currentModelInfo, res, 'tag', '')" class="shimmer-tag" :style="{ fontSize: '11px', color: '#fff', background: getTierConfigForRes(currentModelInfo, res, 'tag_color', '#10b981'), padding: '0 4px', borderRadius: '4px', lineHeight: '1.4', whiteSpace: 'nowrap' }">{{ getTierConfigForRes(currentModelInfo, res, 'tag', '') }}</span>
-                    <span v-else-if="Number(getTierConfigForRes(currentModelInfo, res, 'credits_per_image', 1)) === 0" class="shimmer-tag" style="font-size: 11px; color: #fff; background: #10b981; padding: 0 4px; border-radius: 4px; line-height: 1.4; white-space: nowrap;">限时免费</span>
-                    <span v-else style="font-size: 11px; opacity: 0.7;">{{ parseFloat(Number(getTierConfigForRes(currentModelInfo, res, 'credits_per_image', 1)).toFixed(2)) }}积分</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="setting-item" v-if="currentModelImageCounts.length > 0">
-              <div class="setting-label">生成数量</div>
-              <div class="setting-options">
-                <div class="option-btn" v-for="count in currentModelImageCounts" :key="count" :class="{ active: form.num_images === Number(count) }" @click="form.num_images = Number(count)">
-                  {{ count }}张
-                </div>
-              </div>
-            </div>
-          </div>
-        </el-popover>
       </div>
       
       <div class="input-box" :class="{ 'has-refs': form.reference_image && form.reference_image.length > 0, 'is-focused': isInputFocused }" @click="isInputShrunk ? (isInputFocused = true, isInputShrunk = false) : null">
@@ -1009,82 +945,75 @@
           </div>
         </div>
         
-        <!-- 叠加卡片式预览区（移入输入框内部左侧，当有图片时显示） -->
-      <div class="reference-image-preview-inline" v-if="form.reference_image && form.reference_image.length > 0" :style="{ '--total-items': (form.reference_image.length + (form.reference_image.length < currentModelMaxRefImages ? 1 : 0)) }">
-        <div class="preview-list-inline" :class="{ 'is-expandable': form.reference_image.length > 1 || (form.reference_image.length === 1 && currentModelMaxRefImages > 1), 'is-mobile-expanded': isMobileRefExpanded }" @click="isInputShrunk ? (isInputFocused = true, isInputShrunk = false) : (windowWidth <= 768 ? isMobileRefExpanded = true : null)">
-            <!-- 悬浮触发区域（隐形），保证展开后鼠标在缝隙间不失去焦点 -->
-            <div class="reference-group-hover-trigger"></div>
-            
-            <!-- 已上传的图片卡片 -->
-            <div class="preview-container-inline" v-for="(img, index) in form.reference_image" :key="index" :style="{ '--index': index, '--rotate': `${index === 0 ? 0 : [6, -4, 2, -8, 8, -6, 4, -2, 10, -10, 5, -5, 7, -7, 3, -3][(index - 1) % 16]}deg`, zIndex: form.reference_image.length - index + 1 }">
-              <el-image 
-                :src="img" 
-                class="preview-img-inline" 
-                :preview-src-list="windowWidth > 768 ? form.reference_image : []" 
-                :initial-index="index"
-                fit="cover"
-                :preview-teleported="true"
-                :hide-on-click-modal="true"
-              />
-              <div class="remove-btn-inline" @click.stop="clearReferenceImage(index)">
-                <el-icon><Close /></el-icon>
+        <div class="reference-image-preview-inline" v-if="form.reference_image && form.reference_image.length > 0" :style="{ '--total-items': (form.reference_image.length + (form.reference_image.length < currentModelMaxRefImages ? 1 : 0)) } as any">
+          <div class="preview-list-inline" :class="{ 'is-expandable': form.reference_image.length > 1 || (form.reference_image.length === 1 && currentModelMaxRefImages > 1), 'is-mobile-expanded': isMobileRefExpanded }" @click="isInputShrunk ? (isInputFocused = true, isInputShrunk = false) : (windowWidth <= 768 ? isMobileRefExpanded = true : null)">
+              <div class="reference-group-hover-trigger"></div>
+              <div class="preview-container-inline" v-for="(img, index) in form.reference_image" :key="index" :style="{ '--index': index, '--rotate': `${index === 0 ? 0 : [6, -4, 2, -8, 8, -6, 4, -2, 10, -10, 5, -5, 7, -7, 3, -3][(Number(index) - 1) % 16]}deg`, zIndex: form.reference_image.length - Number(index) + 1 } as any">
+                <el-image 
+                  :src="img" 
+                  class="preview-img-inline" 
+                  :preview-src-list="windowWidth > 768 ? form.reference_image : []" 
+                  :initial-index="index"
+                  fit="cover"
+                  :preview-teleported="true"
+                  :hide-on-click-modal="true"
+                />
+                <div class="remove-btn-inline" @click.stop="clearReferenceImage(Number(index))">
+                  <el-icon><Close /></el-icon>
+                </div>
+                <div class="collapsed-upload-badge" @click.stop="triggerUpload" v-if="index === 0 && form.reference_image.length < currentModelMaxRefImages">
+                  <svg width="1em" height="1em" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" role="presentation" xmlns="http://www.w3.org/2000/svg"><g><path data-follow-fill="currentColor" d="M10.8 20a1.2 1.2 0 0 0 2.4 0v-6.8H20a1.2 1.2 0 1 0 0-2.4h-6.8V4a1.2 1.2 0 0 0-2.4 0v6.8H4a1.2 1.2 0 0 0 0 2.4h6.8V20Z" clip-rule="evenodd" fill-rule="evenodd" fill="currentColor"></path></g></svg>
+                </div>
               </div>
-              <!-- 仅在第一张图片上显示的小型上传按钮（未展开时显示） -->
-              <div class="collapsed-upload-badge" @click.stop="triggerUpload" v-if="index === 0 && form.reference_image.length < currentModelMaxRefImages">
-                <svg width="1em" height="1em" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" role="presentation" xmlns="http://www.w3.org/2000/svg"><g><path data-follow-fill="currentColor" d="M10.8 20a1.2 1.2 0 0 0 2.4 0v-6.8H20a1.2 1.2 0 1 0 0-2.4h-6.8V4a1.2 1.2 0 0 0-2.4 0v6.8H4a1.2 1.2 0 0 0 0 2.4h6.8V20Z" clip-rule="evenodd" fill-rule="evenodd" fill="currentColor"></path></g></svg>
-              </div>
-            </div>
-
-            <!-- 折叠在卡片堆里的同尺寸大卡片续传按钮（仅悬浮时滑出） -->
-            <div class="reference-upload-item-inline" @click.stop="triggerUpload" v-if="form.reference_image.length < currentModelMaxRefImages" :style="{ '--index': form.reference_image.length, '--rotate': `-12deg`, zIndex: 0 }">
-              <div class="reference-upload-content" style="transform: rotate(12deg);">
-                <svg width="1em" height="1em" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" role="presentation" xmlns="http://www.w3.org/2000/svg" class="upload-icon-svg"><g><path data-follow-fill="currentColor" d="M10.8 20a1.2 1.2 0 0 0 2.4 0v-6.8H20a1.2 1.2 0 1 0 0-2.4h-6.8V4a1.2 1.2 0 0 0-2.4 0v6.8H4a1.2 1.2 0 0 0 0 2.4h6.8V20Z" clip-rule="evenodd" fill-rule="evenodd" fill="currentColor"></path></g></svg>
+              <div class="reference-upload-item-inline" @click.stop="triggerUpload" v-if="form.reference_image.length < currentModelMaxRefImages" :style="{ '--index': form.reference_image.length, '--rotate': `-12deg`, zIndex: 0 } as any">
+                <div class="reference-upload-content" style="transform: rotate(12deg);">
+                  <svg width="1em" height="1em" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" role="presentation" xmlns="http://www.w3.org/2000/svg" class="upload-icon-svg"><g><path data-follow-fill="currentColor" d="M10.8 20a1.2 1.2 0 0 0 2.4 0v-6.8H20a1.2 1.2 0 1 0 0-2.4h-6.8V4a1.2 1.2 0 0 0-2.4 0v6.8H4a1.2 1.2 0 0 0 0 2.4h6.8V20Z" clip-rule="evenodd" fill-rule="evenodd" fill="currentColor"></path></g></svg>
+                </div>
               </div>
             </div>
           </div>
+          
+          <input type="file" ref="fileInputRef" accept="image/*" style="display: none" @change="handleFileUpload" multiple />
+          <el-input
+              ref="inputRef"
+              v-model="form.prompt"
+              type="textarea"
+              :rows="1"
+              :autosize="{ minRows: 1, maxRows: 6 }"
+              :placeholder="windowWidth <= 768 ? '请输入图片描述...' : '请输入你想生成的图片描述...'"
+              resize="none"
+              class="chat-input"
+              :class="{ 'has-references': form.reference_image && form.reference_image.length > 0, 'no-refs-allowed': currentModelMaxRefImages === 0 }"
+              @keydown.enter.exact.prevent="handleEnter"
+              @keydown.enter.shift.exact.prevent="handleShiftEnter"
+              @focus="isInputFocused = true; isInputShrunk = false"
+              @click="isInputFocused = true; isInputShrunk = false"
+            />
+          <el-button
+            v-if="windowWidth <= 768 && isMobileRefExpanded"
+            type="info"
+            circle
+            class="send-btn"
+            @click.stop="isMobileRefExpanded = false"
+          >
+            <el-icon><Close /></el-icon>
+          </el-button>
+          <el-button
+            v-else
+            type="primary"
+            circle
+            class="send-btn"
+            :class="{ 'maintenance-btn': isCurrentResolutionMaintenance }"
+            :disabled="!form.prompt.trim() || isCurrentResolutionMaintenance"
+            @click="handleGenerate"
+            :title="isCurrentResolutionMaintenance ? '该模型正在维护中，暂时无法生成' : '开始生成'"
+          >
+            <el-icon v-if="!isCurrentResolutionMaintenance"><Position /></el-icon>
+            <span v-else style="font-size: 12px; transform: scale(0.9);">维护中</span>
+          </el-button>
         </div>
-        
-        <input type="file" ref="fileInputRef" accept="image/*" style="display: none" @change="handleFileUpload" multiple />
-        <el-input
-            ref="inputRef"
-            v-model="form.prompt"
-            type="textarea"
-            :rows="1"
-            :autosize="{ minRows: 1, maxRows: 6 }"
-            placeholder="请输入你想生成的图片描述..."
-            resize="none"
-            class="chat-input"
-            :class="{ 'has-references': form.reference_image && form.reference_image.length > 0, 'no-refs-allowed': currentModelMaxRefImages === 0 }"
-            @keydown.enter.prevent="handleEnter"
-            @focus="isInputFocused = true; isInputShrunk = false"
-            @blur="isInputFocused = false"
-            @click="isInputFocused = true; isInputShrunk = false"
-          />
-        <el-button
-          v-if="windowWidth <= 768 && isMobileRefExpanded"
-          type="info"
-          circle
-          class="send-btn"
-          @click.stop="isMobileRefExpanded = false"
-        >
-          <el-icon><Close /></el-icon>
-        </el-button>
-        <el-button
-          v-else
-          type="primary"
-          circle
-          class="send-btn"
-          :class="{ 'maintenance-btn': isCurrentResolutionMaintenance }"
-          :disabled="!form.prompt.trim() || isCurrentResolutionMaintenance"
-          @click="handleGenerate"
-          :title="isCurrentResolutionMaintenance ? '该模型正在维护中，暂时无法生成' : '开始生成'"
-        >
-          <el-icon v-if="!isCurrentResolutionMaintenance"><Position /></el-icon>
-          <span v-else style="font-size: 12px; transform: scale(0.9);">维护中</span>
-        </el-button>
       </div>
     </div>
-  </div>
 </main>
 
 <ExploreContent 
@@ -1254,18 +1183,55 @@
   </div>
 </el-dialog>
 
+<!-- 选择图片作为参考图弹窗 -->
+<el-dialog v-model="selectImageDialogVisible" :width="500" destroy-on-close append-to-body align-center class="modern-group-dialog" :show-close="false">
+  <div class="modern-dialog-header">
+    <h3 class="modern-dialog-title">修改图片</h3>
+    <p class="modern-dialog-subtitle">请选择要添加到参考图的生成图片</p>
+  </div>
+  
+  <div class="modern-group-list-wrapper" style="max-height: 400px; overflow-y: auto; padding: 0 16px;">
+    <div class="image-select-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 8px 0;">
+      <div 
+        v-for="(url, idx) in currentTaskImagesToSelect" 
+        :key="idx"
+        class="image-select-item"
+        :class="{ 'is-active': targetImagesToSelect.includes(url) }"
+        @click="toggleSelectImage(url)"
+        style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; transition: all 0.2s;"
+        :style="{ borderColor: targetImagesToSelect.includes(url) ? '#3b82f6' : 'transparent', boxShadow: targetImagesToSelect.includes(url) ? '0 0 0 2px rgba(59,130,246,0.2)' : 'none' }"
+      >
+        <el-image :src="formatImageUrl(url)" fit="cover" style="width: 100%; height: 160px; display: block;" />
+        <div v-if="targetImagesToSelect.includes(url)" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center; pointer-events: none;">
+          <div style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(59,130,246,0.4);">
+            <el-icon><Check /></el-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modern-dialog-footer">
+    <button class="modern-btn modern-btn-cancel" @click="selectImageDialogVisible = false">取消</button>
+    <button class="modern-btn modern-btn-confirm" @click="confirmSelectImage" :disabled="targetImagesToSelect.length === 0">
+      确认添加 ({{ targetImagesToSelect.length }})
+    </button>
+  </div>
+</el-dialog>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick, onMounted, computed, onUnmounted, watch } from 'vue'
+import { ref, reactive, nextTick, onMounted, computed, onUnmounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  Picture, MagicStick, Sunny, Star,
+  Picture, MagicStick,
   Loading, Download, Position, Warning, Edit,
   Monitor, Brush, Close, MoreFilled, EditPen, Delete, Plus, Folder, FolderOpened, FolderRemove,
-  Expand, Coin, Document, Cpu, Crop, CopyDocument, Clock, Operation, SwitchButton, List, ArrowRight, Setting, ArrowDown, RefreshRight, RefreshLeft, View, Hide, Check, Compass, CircleClose, UserFilled
+  Expand, Coin, Document, Cpu, Crop, CopyDocument, Clock, Operation, SwitchButton, List, ArrowRight, Setting, ArrowDown, RefreshRight, RefreshLeft, View, Hide, Check, Compass, CircleClose, UserFilled, PictureRounded
 } from '@element-plus/icons-vue'
+
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
 import { useAuthStore } from '@/store/auth'
@@ -1275,6 +1241,8 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const contentAreaRef = ref<HTMLElement | null>(null)
+const welcomeScreenRef = ref<HTMLElement | null>(null)
+const inputWrapperRef = ref<HTMLElement | null>(null)
 
 // currentMainView not used anymore, removed
 
@@ -1299,6 +1267,49 @@ const isInputShrunk = ref(false)
 const lastScrollTop = ref(0)
 const isAutoScrolling = ref(true)
 
+// 动态问候语逻辑
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 9) {
+    const morningGreetings = [
+      { main: '早啊！', sub: '新的一天，有什么好点子？' },
+      { main: '早上好！', sub: '喝杯咖啡，开始今天的创作吧。' },
+    ]
+    return morningGreetings[Math.floor(Math.random() * morningGreetings.length)]
+  } else if (hour >= 9 && hour < 12) {
+    const forenoonGreetings = [
+      { main: '上午好！', sub: '灵感在线，随时可以开始。' },
+      { main: 'Hello！', sub: '准备好迎接新的灵感了吗？' },
+    ]
+    return forenoonGreetings[Math.floor(Math.random() * forenoonGreetings.length)]
+  } else if (hour >= 12 && hour < 14) {
+    const noonGreetings = [
+      { main: '中午好！', sub: '休息一下，或者来点灵感？' },
+      { main: '午安！', sub: '吃饱了吗？来画点好玩的吧。' },
+    ]
+    return noonGreetings[Math.floor(Math.random() * noonGreetings.length)]
+  } else if (hour >= 14 && hour < 18) {
+    const afternoonGreetings = [
+      { main: '下午好！', sub: '下午茶时间，配点灵感刚刚好。' },
+      { main: 'Hi！', sub: '下午的创作状态怎么样？' },
+    ]
+    return afternoonGreetings[Math.floor(Math.random() * afternoonGreetings.length)]
+  } else if (hour >= 18 && hour < 22) {
+    const eveningGreetings = [
+      { main: '晚上好！', sub: '夜幕降临，灵感也该登场了。' },
+      { main: '晚上好！', sub: '忙碌了一天，来点轻松的创作？' },
+    ]
+    return eveningGreetings[Math.floor(Math.random() * eveningGreetings.length)]
+  } else {
+    const nightGreetings = [
+      { main: '夜深了，', sub: '还在熬夜？灵感不打烊。' },
+      { main: 'Hello！', sub: '夜晚是诞生奇迹的时候。' },
+    ]
+    return nightGreetings[Math.floor(Math.random() * nightGreetings.length)]
+  }
+})
+
+
 const handleContentScroll = (e: Event) => {
   const target = e.target as HTMLElement
   const currentScrollTop = target.scrollTop
@@ -1310,7 +1321,9 @@ const handleContentScroll = (e: Event) => {
   isAutoScrolling.value = target.scrollHeight - currentScrollTop - target.clientHeight < 150
 
   // 只要发生有效滑动，就保持收缩状态并关闭移动端参考图展开
-  isInputShrunk.value = true
+  if (!isMobileMenuOpen.value) {
+    isInputShrunk.value = true
+  }
   isMobileRefExpanded.value = false
   
   // 如果滚动到底部，恢复展开状态
@@ -1328,6 +1341,11 @@ import defaultLogo from '@/assets/logo/logo.png'
 const cachedLogo = localStorage.getItem('site_logo')
 const siteLogo = ref(cachedLogo || defaultLogo)
 const isMobileMenuOpen = ref(false)
+watch(isMobileMenuOpen, (newVal) => {
+  if (newVal) {
+    isInputShrunk.value = false
+  }
+})
 const isProjectGroupsExpanded = ref(true)
 const isRecentTasksExpanded = ref(true)
 const toggleMobileMenu = () => {
@@ -1541,8 +1559,6 @@ const shouldShowChatTime = (task: any, index: number) => {
 
 const formatChatTime = (timeStr: string) => {
   if (!timeStr) return ''
-  // 转换 UTC 时间到本地时间 (东八区)
-  // 后端返回的是 2026-09-06T15:21:28Z，new Date() 能够自动根据 Z 解析为本地时间
   const date = new Date(timeStr)
   if (isNaN(date.getTime())) return timeStr
   
@@ -1551,18 +1567,22 @@ const formatChatTime = (timeStr: string) => {
   const yesterday = new Date(today.getTime() - 86400000)
   
   const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffDays = Math.floor((today.getTime() - targetDate.getTime()) / 86400000)
   
   const pad = (n: number) => (n < 10 ? '0' + n : n)
   const timePart = `${pad(date.getHours())}:${pad(date.getMinutes())}`
   
   if (targetDate.getTime() === today.getTime()) {
-    return `今天 ${timePart}`
+    return timePart
   } else if (targetDate.getTime() === yesterday.getTime()) {
-    return `昨天 ${timePart}`
+    return '昨天'
+  } else if (diffDays > 0 && diffDays < 7) {
+    const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+    return weekDays[date.getDay()]
   } else if (date.getFullYear() === now.getFullYear()) {
-    return `${date.getMonth() + 1}月${date.getDate()}日 ${timePart}`
+    return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}`
   } else {
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${timePart}`
+    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())}`
   }
 }
 
@@ -1919,6 +1939,9 @@ const handleDropOnSession = async (event: DragEvent, targetSession: any, targetI
   // 立即完成前端状态更新（乐观更新），不等待网络请求
   const otherSessions = sessionList.value.filter(s => (s.project_id || 0) !== projectId)
   
+  // 保持原有时间不变，避免因为拖拽排序而更新显示时间
+  const originalUpdatedAt = sourceSession.updated_at
+  
   // 对于跨组移动，我们必须从其原始的组列表中将它移除。
   // 因为 groupSessions 只是目标组的副本，而 otherSessions 会包含所有其他组（包括原组）。
   // 当我们执行 sourceSession.project_id = projectId 之后，
@@ -1957,6 +1980,10 @@ const handleDropOnSession = async (event: DragEvent, targetSession: any, targetI
     
     if (res.data && res.data.code === 200) {
       // 成功时不显示提示，保持乐观更新的无缝体验
+      // 恢复拖拽前的时间，因为拖拽移动分组只是整理行为，不应该被视为对话聊天的时间更新
+      if (originalUpdatedAt) {
+        sourceSession.updated_at = originalUpdatedAt
+      }
     } else {
       // 在这里添加强制响应式更新
       sessionList.value = [...sessionList.value]
@@ -1987,6 +2014,8 @@ const handleDropSession = async (event: DragEvent, projectId: number) => {
   // Optimistic update
   const originalProjectId = session.project_id || 0
   session.project_id = projectId
+  // 保持原有时间不变，避免因为拖拽而更新显示时间
+  const originalUpdatedAt = session.updated_at
   
   // Force update sessionList reference to trigger reactivity in computed properties
   sessionList.value = [...sessionList.value]
@@ -2003,6 +2032,10 @@ const handleDropSession = async (event: DragEvent, projectId: number) => {
     
     if (res.data && res.data.code === 200) {
       // 成功时不显示提示，保持乐观更新的无缝体验
+      // 恢复拖拽前的时间，因为拖拽移动分组只是整理行为，不应该被视为对话聊天的时间更新
+      if (originalUpdatedAt) {
+        session.updated_at = originalUpdatedAt
+      }
     } else {
       // Revert on failure
       session.project_id = originalProjectId
@@ -2088,18 +2121,34 @@ const confirmMoveToGroup = async () => {
   isMovingToGroup.value = true
   const sourceSession = targetSessionForMove.value
   const projectId = targetProjectGroupId.value
-  const originalProjectId = sourceSession.project_id || 0
+  const originalUpdatedAt = sourceSession.updated_at
   
   // 乐观更新（立即修改状态，消除延迟感）
   // 必须确保是从 sessionList 中找到并修改，因为 sourceSession 可能是个旧引用
   const sessionIndex = sessionList.value.findIndex(s => s.session_id === sourceSession.session_id)
+  
+  let targetSession = null
   if (sessionIndex !== -1) {
-    sessionList.value[sessionIndex] = { ...sessionList.value[sessionIndex], project_id: projectId }
-    sessionList.value = [...sessionList.value]
+    targetSession = sessionList.value[sessionIndex]
+    // 从原位置移除
+    sessionList.value.splice(sessionIndex, 1)
   } else {
-    sourceSession.project_id = projectId
-    sessionList.value = [...sessionList.value]
+    targetSession = { ...sourceSession }
   }
+  
+  targetSession.project_id = projectId
+  
+  // 找到目标组的第一个元素的索引，插入到最前面
+  const targetGroupFirstIndex = sessionList.value.findIndex(s => (s.project_id || 0) === projectId)
+  if (targetGroupFirstIndex !== -1) {
+    sessionList.value.splice(targetGroupFirstIndex, 0, targetSession)
+  } else {
+    // 如果目标组为空，就放在开头
+    sessionList.value.unshift(targetSession)
+  }
+  
+  // 触发响应式更新
+  sessionList.value = [...sessionList.value]
 
   if (projectId !== 0 && collapsedGroups.value.has(projectId)) {
     collapsedGroups.value.delete(projectId)
@@ -2112,26 +2161,24 @@ const confirmMoveToGroup = async () => {
       project_id: projectId
     })
     if (resMove.data && resMove.data.code === 200) {
+      // 如果后端支持排序，我们可以接着调用 reorder 接口把修改后的顺序同步给后端
+      // 为了性能和简化，这里我们假设新移动的在目标组最上面
+      const groupSessions = sessionList.value.filter(s => (s.project_id || 0) === projectId)
+      const orderedSessionIds = groupSessions.map(s => s.session_id)
+      await request.post('/api/user/sessions/reorder', { session_ids: orderedSessionIds })
+      
+      if (originalUpdatedAt) {
+        targetSession.updated_at = originalUpdatedAt
+      }
       ElMessage.success('移动成功')
     } else {
-      // 失败则回滚状态
-      if (sessionIndex !== -1) {
-        sessionList.value[sessionIndex] = { ...sessionList.value[sessionIndex], project_id: originalProjectId }
-      } else {
-        sourceSession.project_id = originalProjectId
-      }
-      sessionList.value = [...sessionList.value]
-      ElMessage.error(resMove.data?.message || '移动失败')
+      throw new Error(resMove.data?.message || '移动失败')
     }
-  } catch (e) {
-    // 失败则回滚状态
-    if (sessionIndex !== -1) {
-      sessionList.value[sessionIndex] = { ...sessionList.value[sessionIndex], project_id: originalProjectId }
-    } else {
-      sourceSession.project_id = originalProjectId
-    }
-    sessionList.value = [...sessionList.value]
-    ElMessage.error('移动失败')
+  } catch (e: any) {
+    // 失败则回滚状态 (重新获取最新列表)
+    ElMessage.error(e.message || '移动失败')
+    // 触发重新加载列表以回滚
+    fetchProjectGroups(false, true)
   } finally {
     isMovingToGroup.value = false
   }
@@ -2416,11 +2463,34 @@ const isInputFocused = ref(false)
 // 跟踪移动端展开状态
 const isMobileRefExpanded = ref(false)
 
+// 键盘高度偏移
+const keyboardOffset = ref(0)
+const handleVisualViewport = () => {
+  if (window.visualViewport) {
+    // 当视觉视口高度小于窗口内部高度时，说明键盘弹起了
+    const offset = window.innerHeight - window.visualViewport.height
+    if (offset > 0 && isInputFocused.value) {
+      keyboardOffset.value = offset
+    } else {
+      keyboardOffset.value = 0
+    }
+  }
+}
+
 // Click outside to remove focus state
 const handleClickOutside = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  if (!target.closest('.input-box')) {
+  
+  // 排除 Element Plus 的弹出层，防止点击下拉菜单等 teleport 元素时收缩
+  if (target.closest('.el-popper') || target.closest('.el-select-dropdown') || target.closest('.el-dialog') || target.closest('.el-overlay')) {
+    return
+  }
+
+  if (!target.closest('.input-area-wrapper') && !target.closest('.mobile-menu-btn') && !target.closest('.mini-sidebar') && !target.closest('.history-sidebar') && !target.closest('.sidebar-overlay')) {
     isInputFocused.value = false
+    if (!isMobileMenuOpen.value) {
+      isInputShrunk.value = true
+    }
   }
   // 点击外部时收起移动端的图片堆叠
   if (!target.closest('.reference-image-preview-inline')) {
@@ -2480,6 +2550,7 @@ const handleFileUpload = async (event: Event) => {
   // 移动端：上传完成后自动展开，方便用户看到刚上传的图片并进行管理
   if (windowWidth.value <= 768) {
     isMobileRefExpanded.value = true
+    isInputShrunk.value = false
   }
 }
 
@@ -2536,7 +2607,8 @@ const fetchModels = async () => {
   try {
     const res = await request.get('/api/models/list')
     if (res.data && res.data.success) {
-      availableModels.value = res.data.data.filter((m: any) => m.model_type === 4 || m.model_type === '4') // 只筛选图片生成模型
+      // 兼容后端返回数字类型的 4 和字符串类型的 '4'
+      availableModels.value = res.data.data.filter((m: any) => m.model_type === 4 || m.model_type === '4' || String(m.model_type) === '4')
       if (availableModels.value.length > 0) {
         form.series_id = availableModels.value[0].series_id
         // set default values based on the first model
@@ -2556,16 +2628,125 @@ const fetchModels = async () => {
 
 let contentMutationObserver: MutationObserver | null = null
 let contentResizeObserver: ResizeObserver | null = null
+let inputHeightObserver: ResizeObserver | null = null
 
 const inputRef = ref<any | null>(null)
 
+/* 欢迎页卡片底边动态贴合输入浮层顶边 */
+const syncWelcomePadding = () => {
+  const wrapper = inputWrapperRef.value
+  const welcome = welcomeScreenRef.value
+  if (!wrapper || !welcome) return
+  const h = wrapper.offsetHeight
+  if (h > 0) welcome.style.paddingBottom = h + 'px'
+}
+
+// 使用降级方案的复制功能，避免浏览器安全限制
+const fallbackCopyTextToClipboard = (text: string) => {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  
+  // 避免滚动到底部
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      ElMessage.success('报错信息已复制');
+    } else {
+      ElMessage.error('复制失败，请手动复制');
+    }
+  } catch (err) {
+    ElMessage.error('复制失败，请手动复制');
+  }
+
+  document.body.removeChild(textArea);
+}
+
+// 显示错误提示弹窗
+const showErrorDialog = (errorMsg: string) => {
+  ElMessageBox({
+    title: '生成失败原因',
+    message: h('div', { style: 'padding: 10px 0; color: #ef4444; line-height: 1.6; word-break: break-all; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;' }, [
+      h('div', null, errorMsg),
+      h('div', {
+        style: 'cursor: pointer; display: flex; align-items: center; gap: 4px; color: #6b7280; font-size: 12px; background: #f3f4f6; padding: 4px 12px; border-radius: 12px; transition: all 0.2s;',
+        onClick: () => {
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(errorMsg).then(() => {
+              ElMessage.success('报错信息已复制')
+            }).catch(() => {
+              fallbackCopyTextToClipboard(errorMsg)
+            })
+          } else {
+            fallbackCopyTextToClipboard(errorMsg)
+          }
+        },
+        onMouseenter: (e: MouseEvent) => {
+          (e.currentTarget as HTMLElement).style.background = '#e5e7eb';
+          (e.currentTarget as HTMLElement).style.color = '#374151';
+        },
+        onMouseleave: (e: MouseEvent) => {
+          (e.currentTarget as HTMLElement).style.background = '#f3f4f6';
+          (e.currentTarget as HTMLElement).style.color = '#6b7280';
+        }
+      }, [
+        h('i', { class: 'el-icon' }, [h(CopyDocument)]),
+        h('span', null, '复制报错信息')
+      ])
+    ]),
+    confirmButtonText: '我知道了',
+    confirmButtonClass: 'custom-error-confirm-btn',
+    customClass: 'elegant-error-dialog',
+    center: true,
+    showClose: false
+  })
+}
+
+const loadingTextIndex = ref(0)
+let loadingTextTimer: number | null = null
+
+const funFacts = [
+  "小知识：AI画画就像做梦，每次都是独一无二的~",
+  "提示：描述越详细，AI越能懂你的心意哦",
+  "冷知识：AI生图其实是在一堆噪点中'雕刻'出画面",
+  "灵感：试试在提示词加上'电影级光影'、'8k分辨率'",
+  "等待中：好作品值得多等一会儿..."
+]
+
 onMounted(() => {
+  loadingTextTimer = window.setInterval(() => {
+    loadingTextIndex.value++
+  }, 2500)
+
+  // 处理从探索页面跳转过来的参考图数据
+  const exploreRefImages = sessionStorage.getItem('explore_reference_images')
+  // const explorePrompt = sessionStorage.getItem('explore_prompt')
+  if (exploreRefImages) {
+    form.reference_image = JSON.parse(exploreRefImages)
+    sessionStorage.removeItem('explore_reference_images')
+    sessionStorage.removeItem('explore_prompt')
+  }
+
+  // 监听来自探索页面的上传图片请求
+  window.addEventListener('trigger-upload-from-explore', () => {
+    triggerUpload()
+  })
+  
   if (route.query.q) {
     if (route.path === '/explore') {
       router.push({ path: '/', query: { q: route.query.q } })
       return
     }
     form.prompt = route.query.q as string
+    isInputShrunk.value = false
+    isInputFocused.value = true
     if (inputRef.value) {
       inputRef.value.focus()
     }
@@ -2579,12 +2760,36 @@ onMounted(() => {
         return
       }
       form.prompt = newQ as string
+      isInputShrunk.value = false
+      isInputFocused.value = true
       if (inputRef.value) {
         inputRef.value.focus()
       }
       router.replace({ path: route.path })
     }
   })
+
+  watch(() => route.path, (newPath) => {
+    if (newPath === '/') {
+      isInputShrunk.value = false
+      nextTick(() => {
+        scrollToBottom(true)
+      })
+    }
+  })
+
+  // 欢迎页卡片底边贴合输入浮层顶边：立即同步一次，并用 ResizeObserver 跟随浮层高度变化
+  syncWelcomePadding()
+  if (typeof ResizeObserver !== 'undefined' && inputWrapperRef.value) {
+    inputHeightObserver = new ResizeObserver(syncWelcomePadding)
+    inputHeightObserver.observe(inputWrapperRef.value)
+  }
+  window.addEventListener('resize', syncWelcomePadding)
+  
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleVisualViewport)
+    window.visualViewport.addEventListener('scroll', handleVisualViewport)
+  }
 
   window.addEventListener('resize', handleResize)
   document.addEventListener('click', handleClickOutside)
@@ -2784,6 +2989,11 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('trigger-upload-from-explore', triggerUpload)
+  if (loadingTextTimer) {
+    clearInterval(loadingTextTimer)
+    loadingTextTimer = null
+  }
   if (contentMutationObserver) {
     contentMutationObserver.disconnect()
     contentMutationObserver = null
@@ -2791,6 +3001,15 @@ onUnmounted(() => {
   if (contentResizeObserver) {
     contentResizeObserver.disconnect()
     contentResizeObserver = null
+  }
+  window.removeEventListener('resize', syncWelcomePadding)
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleVisualViewport)
+    window.visualViewport.removeEventListener('scroll', handleVisualViewport)
+  }
+  if (inputHeightObserver) {
+    inputHeightObserver.disconnect()
+    inputHeightObserver = null
   }
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('click', handleClickOutside)
@@ -3173,6 +3392,7 @@ const selectSession = (sessionId: string) => {
   if (isMobileMenuOpen.value) {
     isMobileMenuOpen.value = false
   }
+  isInputShrunk.value = false
 }
 
 const resetTask = () => {
@@ -3189,11 +3409,26 @@ const resetTask = () => {
   isNewTaskMode.value = true
   hasMoreTasks.value = false
   isMobileMenuOpen.value = false
+  isInputShrunk.value = false
 }
 
 const handleNewChatFromExplore = () => {
   resetTask()
   router.push('/')
+  if (window.innerWidth <= 768) {
+    isMobileMenuOpen.value = true
+  }
+}
+
+const handleNavigateToChat = () => {
+  const fromExplore = route.path === '/explore'
+  router.push('/')
+  isInputShrunk.value = false
+  if (fromExplore && window.innerWidth <= 768) {
+    isMobileMenuOpen.value = true
+  } else {
+    isMobileMenuOpen.value = false
+  }
 }
 
 const scrollToBottom = (force = false) => {
@@ -3210,8 +3445,24 @@ const scrollToBottom = (force = false) => {
 }
 
 const handleEnter = (e: KeyboardEvent) => {
-  if (e.isComposing || e.shiftKey) return
+  if (e.isComposing) return
+  e.preventDefault()
   handleGenerate()
+}
+
+const handleShiftEnter = (e: KeyboardEvent) => {
+  if (e.isComposing) return
+  e.preventDefault()
+  const textarea = e.target as HTMLTextAreaElement
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const value = form.prompt
+  form.prompt = value.substring(0, start) + '\n' + value.substring(end)
+  // 重新聚焦并设置光标位置
+  nextTick(() => {
+    textarea.focus()
+    textarea.selectionStart = textarea.selectionEnd = start + 1
+  })
 }
 
 const regenerateTask = (task: any) => {
@@ -3227,6 +3478,73 @@ const regenerateTask = (task: any) => {
   }
   pendingReferenceFiles.value = []
   handleGenerate()
+}
+
+// 修改图片功能相关状态
+const selectImageDialogVisible = ref(false)
+const currentTaskImagesToSelect = ref<string[]>([])
+const targetImagesToSelect = ref<string[]>([])
+const modifyingTask = ref<any>(null)
+
+const toggleSelectImage = (url: string) => {
+  const index = targetImagesToSelect.value.indexOf(url)
+  if (index === -1) {
+    targetImagesToSelect.value.push(url)
+  } else {
+    targetImagesToSelect.value.splice(index, 1)
+  }
+}
+
+const modifyImage = (task: any) => {
+  const urls = parseImageUrls(task.image_url)
+  if (urls.length === 0) {
+    ElMessage.warning('没有可修改的图片')
+    return
+  }
+  modifyingTask.value = task
+  if (urls.length === 1) {
+    // 只有一张图片，直接添加到参考图
+    targetImagesToSelect.value = [urls[0]]
+    confirmSelectImage()
+  } else {
+    // 多张图片，弹窗让用户选择
+    currentTaskImagesToSelect.value = urls
+    targetImagesToSelect.value = []
+    selectImageDialogVisible.value = true
+  }
+}
+
+const confirmSelectImage = () => {
+  if (targetImagesToSelect.value.length === 0 || !modifyingTask.value) return
+  
+  // 设置到参考图 (如果已有参考图则追加，并去重，超出限制则截断)
+  if (form.reference_image && form.reference_image.length > 0) {
+    const uniqueTargets = targetImagesToSelect.value.filter(img => !form.reference_image.includes(img))
+    const newRefs = [...form.reference_image, ...uniqueTargets]
+    const maxRefs = currentModelMaxRefImages.value || 3
+    if (newRefs.length > maxRefs) {
+      ElMessage.warning(`最多只能上传 ${maxRefs} 张参考图，已截断多余图片`)
+      form.reference_image = newRefs.slice(0, maxRefs)
+    } else {
+      form.reference_image = newRefs
+    }
+  } else {
+    form.reference_image = [...targetImagesToSelect.value]
+  }
+  
+  // 移除同步其他表单信息的逻辑，仅追加参考图，不覆盖用户当前的输入和模型设置
+  
+  pendingReferenceFiles.value = []
+  isInputFocused.value = true
+  
+  selectImageDialogVisible.value = false
+  
+  nextTick(() => {
+    const inputEl = document.querySelector('.main-input textarea') as HTMLTextAreaElement
+    if (inputEl) {
+      inputEl.focus()
+    }
+  })
 }
 
 const reEditTask = (task: any) => {
@@ -3351,7 +3669,9 @@ const handleGenerate = async () => {
       title: currentPrompt,
       image_url: '',
       status: 0, // 初始状态标记为生成中
-      project_id: 0
+      project_id: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     })
     hasMoreTasks.value = false
     // 如果是从探索页过来的新对话，清空当前页面的旧任务列表
@@ -3365,11 +3685,13 @@ const handleGenerate = async () => {
       const session = sessionList.value[index]
       session.status = 0 // 将该会话状态标记为生成中，以便显示 loading
       session.title = currentPrompt // 更新为最新的 prompt
+      session.updated_at = new Date().toISOString() // 立即更新时间
       sessionList.value.splice(index, 1)
       sessionList.value.unshift(session)
     } else if (index === 0) {
       sessionList.value[0].status = 0
       sessionList.value[0].title = currentPrompt
+      sessionList.value[0].updated_at = new Date().toISOString() // 立即更新时间
     }
   }
 
@@ -3545,15 +3867,19 @@ const getErrorMessage = (logContent?: string, status?: number) => {
   
   if (safeText.includes('safety') || safeText.includes('policy') || safeText.includes('violation') || 
       safeText.includes('blocked') || safeText.includes('nsfw') || safeText.includes('敏感') || 
-      safeText.includes('违规') || safeText.includes('prompt') || safeText.includes('bad request') || 
+      safeText.includes('违规')) {
+    return status === 3 ? '该张图片生成失败(触发过滤)' : '提示词可能包含违规或不支持的内容，请修改后重试'
+  }
+  
+  if (safeText.includes('prompt') || safeText.includes('bad request') || 
       safeText.includes('status: 400') || safeText.includes('error status (task 1): 400')) {
-    return status === 3 ? '该张图片生成失败(触发过滤或网络波动)' : '提示词可能包含违规或不支持的内容，请修改后重试'
+    return status === 3 ? '该张图片生成失败(网络波动)' : '生成失败已退款，系统异常请联系官方大人'
   }
   
   if (safeText.includes('invalid token') || safeText.includes('unauthorized') || safeText.includes('balance') || 
       safeText.includes('insufficient') || safeText.includes('quota') || safeText.includes('api_key') || 
       safeText.includes('key') || safeText.includes('401') || safeText.includes('402')) {
-    return status === 3 ? '接口不稳定，部分生成失败' : '接口请求失败或系统繁忙，请稍后重试'
+    return status === 3 ? '部分生成失败已退款，系统异常请联系官方大人' : '生成失败已退款，系统异常请联系官方大人'
   }
   
   if (safeText.includes('timeout') || safeText.includes('network')) {
@@ -3598,9 +3924,8 @@ const formatImageUrl = (img: string) => {
     if ((window as any).APP_CONFIG?.API_BASE_URL) {
       defaultBase = (window as any).APP_CONFIG.API_BASE_URL.replace(/\/$/, '')
     } else {
-      // 动态获取当前访问的域名，并默认后端在 8088 端口
-      // 如果你的前端和后端在线上是同域名、同端口（例如都通过 Nginx 代理到 80），可以直接用 window.location.origin
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // 动态获取当前访问的域名，如果是本地开发环境默认指向后端的 8088 端口
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')) {
         defaultBase = window.location.protocol + "//" + window.location.hostname + ":8088"
       } else {
         defaultBase = window.location.origin // 线上环境默认使用当前访问的域名
@@ -3732,9 +4057,184 @@ const handleRecharge = () => {
   }
 }
 
-const useSuggestion = (text: string) => {
+const useSuggestion = (item: any) => {
+  const isString = typeof item === 'string'
+  const text = isString ? item : item.content
   form.prompt = text
+  isInputShrunk.value = false
+  isInputFocused.value = true
+  if (inputRef.value) {
+    inputRef.value.focus()
+  }
+  if (!isString && item.need_reference_image) {
+    ElMessage({
+      message: '该提示词建议您上传参考图，请在弹出的窗口中选择',
+      type: 'warning',
+      duration: 4000,
+      showClose: true
+    })
+    triggerUpload()
+  }
 }
+
+const welcomeInspirations = ref<any[]>([])
+const isWelcomeInspirationsLoading = ref(true)
+
+const getArcItemStyle = (index: number, total: number = 0) => {
+  const isMobile = window.innerWidth <= 1024
+  const step = isMobile ? 8.5 : 4.8
+  const len = total || welcomeInspirations.value.length
+  const centerIdx = Math.floor(len / 2)
+  const rotation = (index - centerIdx) * step
+  return {
+    transform: `rotate(${rotation}deg)`
+  }
+}
+
+// Arc Swiper Logic
+const arcRotation = ref(0)
+const isDraggingArc = ref(false)
+let arcStartX = 0
+let arcStartRotation = 0
+
+const startArcDrag = (e: MouseEvent | TouchEvent) => {
+  isDraggingArc.value = true
+  stopAutoPlay() // 拖动时暂停自动轮播
+  arcStartX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
+  arcStartRotation = arcRotation.value
+}
+
+const onArcDrag = (e: MouseEvent | TouchEvent) => {
+  if (!isDraggingArc.value) return
+  const currentX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
+  const diffX = currentX - arcStartX
+  arcRotation.value = arcStartRotation + diffX * 0.05
+}
+
+const endArcDrag = () => {
+  if (!isDraggingArc.value) return
+  isDraggingArc.value = false
+  const isMobile = window.innerWidth <= 1024
+  const step = isMobile ? 8.5 : 4.8
+  let targetRotation = Math.round(arcRotation.value / step) * step
+  
+  const len = welcomeInspirations.value.length
+  if (len > 0) {
+    const centerIdx = Math.floor(len / 2)
+    const maxRotation = centerIdx * step
+    const minRotation = (centerIdx - (len - 1)) * step
+    
+    if (targetRotation > maxRotation) targetRotation = maxRotation
+    if (targetRotation < minRotation) targetRotation = minRotation
+  } else {
+    targetRotation = 0
+  }
+  
+  arcRotation.value = targetRotation
+  startAutoPlay() // 重启自动轮播
+}
+
+const endArcDragAndResume = () => {
+  endArcDrag()
+  startAutoPlay() // 鼠标移出容器时也确保恢复轮播
+}
+
+let autoPlayTimer: any = null
+let autoPlayDirection = -1 // 默认向左旋转
+
+const startAutoPlay = () => {
+  stopAutoPlay()
+  autoPlayTimer = setInterval(() => {
+    if (isDraggingArc.value) return
+    const isMobile = window.innerWidth <= 1024
+    const step = isMobile ? 8.5 : 4.8
+    const len = welcomeInspirations.value.length
+    if (len === 0) return
+    
+    const centerIdx = Math.floor(len / 2)
+    const maxRotation = centerIdx * step
+    const minRotation = (centerIdx - (len - 1)) * step
+    
+    let nextRotation = arcRotation.value + (step * autoPlayDirection)
+    
+    // 到达边界时反转方向
+    if (nextRotation < minRotation) {
+      nextRotation = minRotation + step
+      autoPlayDirection = 1
+    } else if (nextRotation > maxRotation) {
+      nextRotation = maxRotation - step
+      autoPlayDirection = -1
+    }
+    
+    arcRotation.value = nextRotation
+  }, 3000) // 每3秒自动切换一次
+}
+
+const stopAutoPlay = () => {
+  if (autoPlayTimer) {
+    clearInterval(autoPlayTimer)
+    autoPlayTimer = null
+  }
+}
+
+const getMaskColor = (index: number, alpha: number = 0.6) => {
+  const colors = [
+    [153, 83, 61],    // 橙棕色
+    [61, 107, 153],   // 蓝色
+    [153, 107, 61],   // 金色
+    [115, 77, 153],   // 紫色
+    [61, 153, 115],   // 绿色
+  ]
+  const c = colors[index % colors.length]
+  return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`
+}
+
+const fetchWelcomeInspirations = async () => {
+  isWelcomeInspirationsLoading.value = true
+  try {
+    // 增加获取数量以便有足够的基数进行随机打乱，取前20条
+    const res: any = await request.get('/api/public/inspirations/list', {
+      params: { page: 1, page_size: 20 }
+    })
+    let newList: any[] = []
+    if (res.data?.list) {
+      newList = res.data.list
+    } else if (res.data?.data?.list) {
+      newList = res.data.data.list
+    } else if (Array.isArray(res.data)) {
+      newList = res.data
+    } else if (Array.isArray(res.data?.data)) {
+      newList = res.data.data
+    }
+    
+    // 将数据随机打乱，并截取前10条展示
+    if (newList.length > 0) {
+      newList = newList.sort(() => Math.random() - 0.5).slice(0, 10)
+    }
+    
+    welcomeInspirations.value = newList
+    
+    // 数据加载完成后启动自动轮播
+    if (newList.length > 0) {
+      startAutoPlay()
+    }
+  } catch (error) {
+    console.error('Failed to fetch inspirations', error)
+  } finally {
+    isWelcomeInspirationsLoading.value = false
+  }
+}
+
+onMounted(() => {
+  if (isLoggedIn.value) {
+    fetchUserInfo()
+  }
+  fetchWelcomeInspirations()
+})
+
+onUnmounted(() => {
+  stopAutoPlay()
+})
 
 const downloadImage = (url: string) => {
   if (!url) return
@@ -3747,83 +4247,56 @@ const downloadImage = (url: string) => {
 }
 </script>
 
+<style>
+/* 优雅的错误提示弹窗样式 */
+.elegant-error-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  padding-bottom: 20px;
+}
+.elegant-error-dialog .el-message-box__header {
+  padding-top: 20px;
+}
+.elegant-error-dialog .el-message-box__title {
+  font-weight: 600;
+  color: #1f2937;
+}
+.custom-error-confirm-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 8px 24px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+.custom-error-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3) !important;
+}
+.hover-opacity-80:hover {
+  opacity: 0.8;
+}
+.action-bar-bottom {
+  justify-content: flex-start;
+  margin-left: 17px;
+  margin-top: 8px;
+}
+</style>
+
 <style scoped>
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-.empty-session-screen {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding-top: 100px;
-}
-
-.custom-empty-icon {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  margin: 0 auto;
-}
-
-.icon-layer {
-  position: absolute;
-  inset: 0;
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.layer-1 {
-  background: #f1f5f9;
-  transform: rotate(-10deg) scale(0.9);
-  animation: pulse-layer1 4s ease-in-out infinite alternate;
-}
-
-.layer-2 {
-  background: #e2e8f0;
-  transform: rotate(10deg) scale(0.95);
-  opacity: 0.6;
-  animation: pulse-layer2 4s ease-in-out infinite alternate-reverse;
-}
-
-.layer-3 {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
-  transform: rotate(0);
-}
-
-.layer-3 .el-icon {
-  font-size: 42px;
-  color: #334155;
-  transition: transform 0.3s ease;
-}
-
-.custom-empty-icon:hover .layer-3 .el-icon {
-  transform: scale(1.1) rotate(-5deg);
-}
-
-@keyframes pulse-layer1 {
-  0% { transform: rotate(-10deg) scale(0.9); }
-  100% { transform: rotate(-15deg) scale(0.95); }
-}
-
-@keyframes pulse-layer2 {
-  0% { transform: rotate(10deg) scale(0.95); }
-  100% { transform: rotate(15deg) scale(1); }
-}
 
 /* 全局布局重置与字体设置已在 App.vue，这里仅限定作用域 */
 .layout-container {
     display: flex;
-    height: 100dvh;
+    height: 100%; /* 严格跟随 body（100vh/100dvh 链），任何内核下高度都不会塌陷出底部白条 */
     width: 100%;
     position: relative;
-    background-color: #ffffff;
+    background-color: #f9fafb; /* 与页面底色一致：任何缝隙露出的是灰不是白 */
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
@@ -3951,7 +4424,7 @@ const downloadImage = (url: string) => {
     border-top: 1px solid #f3f4f6;
     border-right: 1px solid #f3f4f6;
     box-sizing: border-box; /* 防止边框撑大元素 */
-    transition: width 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
   }
 
   .global-account-container.explore-mode {
@@ -3971,7 +4444,7 @@ const downloadImage = (url: string) => {
       width: 100%;
       border-right: none;
       transform: translateX(-100%);
-      transition: transform 0.3s ease;
+      transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
       z-index: 2000;
     }
     
@@ -4200,6 +4673,7 @@ const downloadImage = (url: string) => {
   transition: all 0.2s ease;
   margin-bottom: 2px;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
 }
 
 .project-group-item:hover {
@@ -4263,12 +4737,17 @@ const downloadImage = (url: string) => {
   opacity: 0;
   pointer-events: none;
   flex-shrink: 0;
+  position: absolute;
+  right: 8px;
+  background-color: transparent;
 }
 
 .project-group-item:hover .group-actions,
 .project-group-item.dropdown-open .group-actions {
   opacity: 1;
   pointer-events: auto;
+  background-color: transparent;
+  border-radius: 8px;
 }
 
 .history-item {
@@ -4341,18 +4820,46 @@ const downloadImage = (url: string) => {
   overflow: hidden;
 }
 
+.history-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
 .history-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+}
+
+.history-time {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-actions {
   opacity: 0;
   pointer-events: none;
   flex-shrink: 0;
+  position: absolute;
+  right: 8px;
+  background-color: transparent;
+}
+
+.history-item:hover .history-actions,
+.history-item.active .history-actions,
+.history-item.dropdown-open .history-actions {
+  opacity: 1;
+  pointer-events: auto;
+  background-color: #e5e7eb;
+  border-radius: 8px;
 }
 
 /* Sidebar Skeleton Styles */
@@ -4396,15 +4903,9 @@ const downloadImage = (url: string) => {
   100% { opacity: 0.6; }
 }
 
-.history-item:hover .history-actions,
-.history-item.dropdown-open .history-actions {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 .action-icon {
-  font-size: 32px !important;
-  padding: 10px;
+  font-size: 28px !important;
+  padding: 8px;
   border-radius: 8px;
   color: #6b7280;
 }
@@ -4452,7 +4953,7 @@ const downloadImage = (url: string) => {
     display: flex;
     flex-direction: column;
     position: relative;
-    background-color: #ffffff;
+    background-color: #f9fafb;
     min-width: 0;
   }
 
@@ -4619,7 +5120,7 @@ const downloadImage = (url: string) => {
 .content-area {
   flex: 1;
   overflow-y: auto;
-  padding: 84px 0 160px 0; /* 恢复底部留白，避免遮挡 */
+  padding: 84px 0 0 0; /* 顶部避开 header；底部不留避让——欢迎页卡片直接延伸到底部，输入框浮在卡片上方（结果页的避让在 .result-screen 上单独给） */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4669,9 +5170,9 @@ const downloadImage = (url: string) => {
 .image-skeleton {
   width: 100%;
 }
-.image-skeleton.small { height: 200px; max-width: 200px; }
-.image-skeleton.medium { height: 280px; max-width: 280px; }
-.image-skeleton.large { height: 350px; max-width: 350px; }
+.image-skeleton.small { height: 200px; width: 200px; }
+.image-skeleton.medium { height: 280px; width: 280px; }
+.image-skeleton.large { height: 350px; width: 350px; }
 
 @keyframes pulse {
   0% { opacity: 0.5; }
@@ -4681,41 +5182,235 @@ const downloadImage = (url: string) => {
 
 /* Welcome Screen */
 .welcome-screen {
-  max-width: 600px;
+  position: relative;
   width: 100%;
-  margin-top: 10vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start; /* 避免在小屏幕时上下对称裁剪内容 */
   text-align: center;
+  padding: 20px 0 280px 0; /* 增加一点默认的顶部内边距，防止被顶部遮挡 */
+  margin-top: -20px; /* 减小默认的负边距，防止越界 */
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+/* 使用伪元素实现 Safe Center，让内容在输入框变高时自动向上移动 */
+.welcome-screen::before,
+.welcome-screen::after {
+  content: '';
+  flex: 1 1 auto;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/* 增加高级的AI环境光晕效果（挂在问候语容器上，居中后仍跟随问候语） */
+.welcome-greeting-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0px; /* 彻底移除问候语和灵感卡片之间的间距 */
+  flex-shrink: 0; 
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.welcome-greeting-container::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  height: 120px;
+  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.12) 0%, rgba(219, 39, 119, 0.03) 50%, transparent 100%);
+  filter: blur(30px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.welcome-greeting {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0 0 12px 0;
   padding: 0 20px;
+  line-height: 1.4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.greeting-main {
+  font-size: 36px;
+  font-weight: 800;
+  color: #4d6bfe; /* 修改为与探索页面一致的蓝色 */
+  letter-spacing: 0.5px;
+}
+
+.greeting-sub {
+  font-size: 20px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+/* Arc Swiper Styles */
+.arc-swiper-container {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  flex: 0 0 auto; /* 禁止收缩，确保卡片完整显示，超出时由外层产生滚动条 */
+  overflow: hidden; /* 恢复隐藏限制，防止滚动条或溢出导致的布局错乱 */
+  margin-top: -20px; /* 进一步缩短与提示语之间的距离，让卡片向上移动 */
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.arc-swiper-container:active {
+  cursor: grabbing;
+}
+
+.arc-swiper-content {
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  width: 0;
+  height: 0;
+  transform-origin: 0 3000px;
+  will-change: transform;
+}
+
+.arc-swiper-item {
+  position: absolute;
+  left: -100px;
+  top: 0;
+  width: 200px;
+  height: 260px;
+  transform-origin: center 3000px;
+  will-change: transform;
+}
+
+.arc-swiper-card {
+  height: 100%;
+  width: 100%;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* 移除了 :active 时的 scale 缩放，避免缩放改变东西 */
+.arc-swiper-card:active {
+  /* transform: scale(0.95); */
+}
+
+.recommend-item-sample {
+  border-radius: 24px;
+  height: 100%;
+  width: 100%;
+  background-position: 50% center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+  overflow: hidden;
+  /* 移除了 box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15); */
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.recommend-item-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
   box-sizing: border-box;
 }
 
-.welcome-logo {
-  margin-bottom: 24px;
-  width: 80px;
-  height: 80px;
-  background-color: #f3f4f6;
-  border-radius: 20px;
+.recommend-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recommend-item-title-icon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  font-size: 14px;
 }
 
-.welcome-title {
-  font-size: 32px;
-  font-weight: 700;
+.recommend-item-title-text {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.recommend-item-image-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recommend-item-image-content-left {
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.recommend-item-image-content-btn {
+  align-self: flex-start;
+  padding: 6px 14px;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 99px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.arc-swiper-card:hover .recommend-item-image-content-btn {
+  background-color: white;
   color: #111827;
-  margin-bottom: 16px;
-  margin-top: 0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
-.welcome-desc {
-  font-size: 16px;
-  color: #6b7280;
-  margin-bottom: 40px;
-  line-height: 1.5;
+.recommend-mask-image {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .suggestion-cards {
@@ -4743,6 +5438,66 @@ const downloadImage = (url: string) => {
 .suggestion-card:hover {
   background-color: #f3f4f6;
   border-color: #d1d5db;
+}
+
+/* Arc Swiper Styles Removed */
+@media (min-width: 768px) {
+  .welcome-greeting-container::before {
+    width: 600px;
+    height: 250px;
+    top: -20px;
+    background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.15) 0%, rgba(219, 39, 119, 0.05) 50%, transparent 100%);
+    filter: blur(50px);
+  }
+  .welcome-greeting {
+    margin-bottom: 12px; /* 进一步缩小主标题和副标题之间的距离 */
+    padding: 0;
+  }
+  .greeting-main {
+    font-size: 42px;
+    letter-spacing: 2px;
+  }
+  .greeting-sub {
+    font-size: 24px;
+    letter-spacing: 1px;
+  }
+  .arc-swiper-container {
+    height: 520px; /* 进一步增加电脑端容器高度，在保持 overflow: hidden 的前提下包容卡片边角 */
+    margin-top: -30px; /* 电脑端让探索卡片进一步向上移动 */
+  }
+  .arc-swiper-content {
+    top: 60px;
+    transform-origin: 0 4000px;
+  }
+  .arc-swiper-item {
+    width: 280px;
+    height: 360px;
+    left: -140px;
+    transform-origin: center 4000px;
+  }
+  .recommend-item-title-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .recommend-item-title-text {
+    font-size: 16px;
+  }
+  .recommend-item-image-content-left {
+    font-size: 15px;
+  }
+  .recommend-item-image-content-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+  .recommend-item-content {
+    padding: 20px;
+  }
+  .welcome-screen {
+    padding-bottom: 320px; /* 进一步增加桌面端底部安全区，防止遮挡 */
+    padding-top: 40px; /* 增加电脑端顶部内边距，防止提示语被遮挡 */
+    margin-top: -60px; /* 减少向上提拉的幅度，防止越界遮挡 */
+  }
 }
 
 /* Inspirations Panel */
@@ -4897,7 +5652,11 @@ const downloadImage = (url: string) => {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  padding-bottom: 40px; /* 恢复适当空隙 */
+  padding-bottom: 176px; /* 避开绝对定位的输入浮层（展开态约 166px），保证最后一条消息不被遮挡 */
+}
+
+.result-screen.has-refs-padding {
+  padding-bottom: 200px; /* 上传参考图后输入框变高，适当增加底部避让空间，使其不过于远 */
 }
 
 .load-more-chat {
@@ -4973,6 +5732,7 @@ const downloadImage = (url: string) => {
 
 .user-message .message-inner {
   flex-direction: row;
+  justify-content: flex-end;
 }
 
 .ai-message .message-inner {
@@ -4986,6 +5746,8 @@ const downloadImage = (url: string) => {
   font-size: 15px;
   line-height: 1.6;
   word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .user-content {
@@ -5041,8 +5803,15 @@ const downloadImage = (url: string) => {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: nowrap;
   transition: opacity 0.2s ease;
   min-height: 20px; /* 保证悬停区域存在 */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.message-meta::-webkit-scrollbar {
+  display: none;
 }
 
 .meta-date {
@@ -5059,6 +5828,8 @@ const downloadImage = (url: string) => {
   cursor: pointer;
   transition: color 0.2s ease, opacity 0.2s ease;
   margin-right: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .meta-action-btn:hover {
@@ -5211,7 +5982,9 @@ const downloadImage = (url: string) => {
   padding: 16px;
   border-top-left-radius: 4px;
   margin-top: 4px;
-  width: 100%; /* Ensure content takes full width */
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .generating-placeholder {
@@ -5258,6 +6031,9 @@ const downloadImage = (url: string) => {
   justify-content: center;
   gap: 12px;
   z-index: 2;
+  width: 100%;
+  padding: 0 8px;
+  box-sizing: border-box;
 }
 
 .generating-spinner {
@@ -5272,6 +6048,24 @@ const downloadImage = (url: string) => {
   color: #3b82f6;
   letter-spacing: 1px;
   animation: pulse-opacity 2s infinite ease-in-out;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+  max-width: 100%;
+  padding: 0 10px;
+}
+
+.text-slide {
+  display: inline-block;
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  0% { opacity: 0; transform: translateY(5px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .generating-timer {
@@ -5298,31 +6092,26 @@ const downloadImage = (url: string) => {
 
 .grid-count-1 {
   grid-template-columns: 1fr;
-  max-width: 400px;
+  width: 400px;
+  max-width: 100%;
 }
 
-.grid-count-2, .grid-count-4 {
-  grid-template-columns: repeat(2, 1fr);
-  max-width: 560px;
-}
-
-.grid-count-3, .grid-count-5, .grid-count-6, .grid-count-7, .grid-count-8, .grid-count-9 {
-  grid-template-columns: repeat(3, 1fr);
-  max-width: 720px;
-}
-
-.image-grid-container:not(.grid-count-1):not(.grid-count-2):not(.grid-count-3):not(.grid-count-4):not(.grid-count-5):not(.grid-count-6):not(.grid-count-7):not(.grid-count-8):not(.grid-count-9) {
-  grid-template-columns: repeat(4, 1fr);
-  max-width: 860px;
+.image-grid-container:not(.grid-count-1) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 560px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .grid-item {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  transition: transform 0.2s ease;
-}
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    transition: transform 0.2s ease;
+  }
 
 .grid-item:hover {
   transform: translateY(-2px);
@@ -5333,11 +6122,13 @@ const downloadImage = (url: string) => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  max-width: 100%;
+  object-fit: cover;
   display: block;
   min-height: 120px;
   background: #f9fafb;
   border: 1px solid #f3f4f6;
+  box-sizing: border-box;
 }
 
 .generated-image :deep(.el-image__error) {
@@ -5390,13 +6181,13 @@ const downloadImage = (url: string) => {
   left: 0;
   right: 0;
   width: 100%;
-  background: transparent;
-  padding: 10px 0 calc(32px + env(safe-area-inset-bottom)) 0; /* 整体调高，避免沉底 */
+  background: transparent; /* 恢复透明：欢迎页卡片延伸到底部，输入框直接浮在卡片上方 */
+  padding: 10px 0 calc(12px + env(safe-area-inset-bottom)) 0; /* 调整底部留白 */
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.1s ease-out, padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: bottom center;
   z-index: 100;
   pointer-events: none;
@@ -5408,26 +6199,28 @@ const downloadImage = (url: string) => {
 }
 
 .input-area-wrapper.is-shrunk {
-  padding-bottom: calc(32px + env(safe-area-inset-bottom)) !important; /* 增加悬浮高度 */
+  /* Add keyboard avoiding padding for mobile */
+  padding-bottom: calc(32px + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px)) !important;
 }
 
 .input-area-wrapper.is-shrunk::before {
   opacity: 0;
 }
 
-.input-area-wrapper.is-shrunk .input-tools-container.mobile-only,
-.input-area-wrapper.is-shrunk .input-tools.desktop-only {
+.input-area-wrapper.is-shrunk .input-tools-container {
   height: 0;
   margin: 0;
   opacity: 0;
   overflow: hidden;
   pointer-events: none;
   transform: translateY(10px);
+  position: absolute;
 }
 
 .input-area-wrapper.is-shrunk .input-box {
   width: 100%;
   min-height: 40px;
+  align-items: center !important;
   border-radius: 0;
   box-shadow: none;
   border-color: transparent;
@@ -5441,6 +6234,7 @@ const downloadImage = (url: string) => {
   width: 28px !important;
   height: 32px !important;
   margin-right: 0 !important; /* 取消额外边距，完全靠 gap 控制 */
+  margin-top: 0 !important; /* 收缩状态下取消下移 */
   transform: rotate(-8deg) !important;
   border-radius: 6px;
   position: relative !important;
@@ -5461,6 +6255,7 @@ const downloadImage = (url: string) => {
 
 .input-area-wrapper.is-shrunk .reference-image-preview-inline {
   margin-right: 0 !important; /* 取消额外边距，完全靠 gap 控制 */
+  margin-top: 0 !important; /* 收缩状态下取消下移 */
   pointer-events: auto; /* 允许交互 */
   overflow: visible !important; /* 收缩状态下强制取消所有滚动条 */
 }
@@ -5471,6 +6266,14 @@ const downloadImage = (url: string) => {
   transition: all 0.3s ease;
   pointer-events: auto;
   cursor: pointer;
+  margin-right: -4px !important; /* 让图片和输入框靠得更近一点 */
+}
+
+@media (max-width: 768px) {
+  .input-area-wrapper.is-shrunk .preview-list-inline {
+    transform: translateY(-10px); /* 仅在手机端向上修正位置 */
+    margin-right: -6px !important; /* 手机端靠得更近一点 */
+  }
 }
 
 .input-area-wrapper.is-shrunk .preview-container-inline {
@@ -5526,11 +6329,68 @@ const downloadImage = (url: string) => {
   display: none !important; /* 收缩状态下隐藏图片上的删除和添加小按钮，保持图标纯净 */
 }
 
+.input-area-wrapper.is-shrunk :deep(.chat-input) {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.input-area-wrapper.is-shrunk .input-box {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.input-area-wrapper.is-shrunk :deep(.chat-input.has-references) {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.input-area-wrapper.is-shrunk .input-box.has-refs {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.input-area-wrapper.is-shrunk :deep(.chat-input.has-references .el-textarea__inner) {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding-top: 9px !important;
+  padding-bottom: 9px !important;
+  max-height: 36px !important;
+  margin-left: -8px !important;
+}
+
 .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner) {
-  padding-left: 12px !important;
-  font-size: 14px;
-  min-height: 24px !important;
-  line-height: 24px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    display: block !important;
+    max-height: 36px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    margin-left: -8px !important; /* 补充：非手机端也靠左一点，但通过媒体查询手机端专门覆盖 */
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner::placeholder) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 18px !important;
+  }
+
+@media (max-width: 768px) {
+  .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner::placeholder) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 20px !important;
+  }
+  
+  :deep(.chat-input .el-textarea__inner::placeholder) {
+    line-height: 20px !important;
+  }
 }
 
 .input-area-wrapper.is-shrunk .send-btn {
@@ -5539,30 +6399,76 @@ const downloadImage = (url: string) => {
   margin-right: -4px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .welcome-screen {
+    margin-top: 0px; 
+    padding-top: 30px; /* 手机端整体向上回调一点点 */
+  }
+  .welcome-greeting-container::before {
+    width: 200px;
+    height: 100px;
+    top: -10px;
+    filter: blur(20px);
+  }
+  .welcome-greeting {
+    margin-bottom: 8px;
+    padding: 0 16px;
+    column-gap: 8px;
+  }
+  .greeting-main {
+    font-size: 28px;
+  }
+  .greeting-sub {
+    font-size: 16px;
+  }
+  
+  .arc-swiper-container {
+    height: 320px;
+    margin-top: 0px; /* 手机端让探索卡片向上一点 */
+  }
+  .arc-swiper-content {
+    top: 30px;
+    transform-origin: 0 1500px; /* 减小手机端圆心半径，让卡片排列更紧凑 */
+  }
+  .arc-swiper-item {
+    width: 180px; /* 稍微缩小手机端卡片宽度 */
+    height: 240px; /* 稍微缩小高度 */
+    left: -90px;
+    transform-origin: center 1500px; /* 同步减小圆心半径 */
+  }
+  .recommend-item-title-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+  .recommend-item-title-text {
+    font-size: 14px;
+  }
+  .recommend-item-image-content-left {
+    font-size: 13px;
+  }
+  .recommend-item-image-content-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+  .recommend-item-content {
+    padding: 12px;
+  }
+
   .input-area-wrapper {
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
-  .input-area-wrapper.is-shrunk {
-    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important; /* 手机端也适当调高 */
-  }
 
-  .content-area {
-    padding-bottom: 140px !important; /* 手机端大幅增加底部内边距，确保不被多行输入框遮挡 */
+  .send-btn {
+    margin-bottom: 0 !important;
   }
-  .result-screen {
-    padding-bottom: 40px !important; /* 手机端恢复结果区域底部内边距 */
-  }
-
-  .input-area-wrapper.is-shrunk .input-box {
-    width: 100%;
-    min-width: unset;
-  }
+}
   
   .reference-upload-item.initial-upload-item {
     width: 40px;
     height: 48px;
     margin-right: 12px; /* 适当增加初始状态下旋转卡片与文字的间距，防止遮挡 */
+    margin-top: -6px; /* 向上移一点 */
   }
   
   .preview-list-inline {
@@ -5620,7 +6526,6 @@ const downloadImage = (url: string) => {
     opacity: 0;
     pointer-events: none;
   }
-}
 
 .input-area-wrapper::before {
   display: none;
@@ -5705,6 +6610,7 @@ const downloadImage = (url: string) => {
   position: relative;
   transform: rotate(-8deg);
   margin-right: 8px;
+  margin-top: 8px; /* 向下移一点 */
   width: 48px;
   height: 56px;
   border-radius: 8px;
@@ -5760,13 +6666,14 @@ const downloadImage = (url: string) => {
   display: flex;
   align-items: center;
   margin-right: 4px; /* 电脑端默认减小右侧间距，拉近和文字距离 */
+  margin-top: 8px; /* 向下移一点 */
   flex-shrink: 0;
 }
 
 .preview-list-inline {
   position: relative;
   width: 48px;
-  height: 72px;
+  height: 56px;
   background-color: transparent;
   display: flex;
   align-items: center;
@@ -5955,27 +6862,33 @@ const downloadImage = (url: string) => {
 }
 
 .input-tools-container {
-  width: calc(100% - 40px);
-  max-width: 760px;
-  margin-bottom: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0px;
   display: flex;
   justify-content: flex-start;
 }
 
 .input-container {
   width: calc(100% - 40px);
-  max-width: 760px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  max-width: 860px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(229, 231, 235, 0.85);
   border-radius: 24px;
   box-sizing: border-box;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 4px 10px rgba(0, 0, 0, 0.02);
-  padding: 16px;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.04),
+    0 12px 32px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 0;
+  gap: 8px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: visible;
 }
 
 .input-area-wrapper.is-shrunk .input-container {
@@ -5985,8 +6898,9 @@ const downloadImage = (url: string) => {
   padding: 8px 16px;
   border-radius: 36px;
   background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
   border-color: transparent;
   gap: 0;
 }
@@ -5999,8 +6913,11 @@ const downloadImage = (url: string) => {
 }
 
 .input-container:focus-within {
-  border-color: #d1d5db;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  border-color: rgba(229, 231, 235, 0.85);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.04),
+    0 12px 32px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
 }
 
 .model-dropdown-wrapper {
@@ -6036,6 +6953,7 @@ const downloadImage = (url: string) => {
   min-width: 0;
   text-align: left;
   line-height: 1.5;
+  max-width: 200px;
 }
 
 .arrow-icon {
@@ -6057,15 +6975,26 @@ const downloadImage = (url: string) => {
   transform-origin: bottom center;
 }
 
-.input-tools {
+.input-tools-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom center;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0;
   display: flex;
-  gap: 8px;
-  padding: 0;
-  align-items: center;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 100;
+  min-width: 0; /* flex item 默认 min-width:auto 会被内容撑开，导致设置按钮溢出容器右边界 */
+}
+
+.input-tools {
+    display: flex;
+    gap: 8px;
+    padding: 0;
+    align-items: center;
+    flex-wrap: wrap; /* 允许在空间不足时换行 */
+    overflow: visible; /* 移除任何截断 */
 }
 .input-tools::-webkit-scrollbar {
   display: none;
@@ -6130,15 +7059,15 @@ const downloadImage = (url: string) => {
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-  max-width: 800px;
+  max-width: 100%;
   background: transparent;
   border: none;
   border-radius: 20px;
-  padding: 8px 4px;
+  padding: 0;
   gap: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
-  min-height: 72px;
+  min-height: 44px;
   box-shadow: none;
 }
 
@@ -6153,7 +7082,7 @@ const downloadImage = (url: string) => {
 }
 
 .input-area-wrapper.is-shrunk .input-box.has-refs {
-  min-height: 40px;
+  min-height: 28px !important;
   padding-bottom: 0px !important;
 }
 
@@ -6165,36 +7094,64 @@ const downloadImage = (url: string) => {
   --el-input-focus-border-color: transparent;
   --el-input-hover-border-color: transparent;
   --el-input-border-color: transparent;
+  min-height: 44px;
 }
 
 :deep(.chat-input .el-textarea__inner) {
-  padding-left: 8px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
   box-shadow: none !important;
   background-color: transparent !important;
-  padding-top: 0px !important;
-  padding-bottom: 0px !important;
-  font-size: 15px;
-  line-height: 24px !important; /* 修改为固定的行高，使单行文本垂直居中 */
-  height: 24px !important; /* 确保基础高度匹配行高 */
-  min-height: 24px !important;
+  padding-top: 11px !important;
+  padding-bottom: 11px !important;
+  font-size: 15px !important;
+  line-height: 22px !important;
+  min-height: 44px !important;
   color: #111827;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none !important;
-  display: flex;
-  align-items: center;
+  font-family: inherit;
+  display: block !important;
+  height: auto;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+}
+
+/* 电脑端滚动条样式 */
+:deep(.chat-input .el-textarea__inner::-webkit-scrollbar) {
+  width: 6px;
+}
+:deep(.chat-input .el-textarea__inner::-webkit-scrollbar-thumb) {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 6px;
+}
+:deep(.chat-input .el-textarea__inner::-webkit-scrollbar-track) {
+  background: transparent;
 }
 
 /* 移除了其他的 padding-left 规则 */
 
 :deep(.chat-input .el-textarea__inner::placeholder) {
   color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: inherit !important;
 }
 
 .send-btn {
   margin-bottom: 4px;
   background-color: #111827 !important;
   border-color: #111827 !important;
-  transition: transform 0.2s ease, opacity 0.2s, width 0.3s ease;
+  transition: transform 0.2s ease, opacity 0.2s, width 0.3s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.15);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
 }
 
 .send-btn.maintenance-btn {
@@ -6205,17 +7162,20 @@ const downloadImage = (url: string) => {
   border-color: #9ca3af !important;
   color: #fff !important;
   opacity: 1 !important;
+  box-shadow: none;
 }
 
 .send-btn:hover:not(.is-disabled) {
   transform: scale(1.05);
   opacity: 0.9;
+  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.24);
 }
 
 .send-btn.is-disabled {
   background-color: #e5e7eb !important;
   border-color: #e5e7eb !important;
   color: #9ca3af !important;
+  box-shadow: none;
 }
 
 /* 提示框样式优化 */
@@ -6235,6 +7195,10 @@ const downloadImage = (url: string) => {
 }
 
 @media (max-width: 768px) {
+  .result-screen.has-refs-padding {
+    padding-bottom: 180px; /* 手机端上传参考图后，底部避让空间调小一点，防止跳动过大 */
+  }
+  
   .settings-popover {
     width: calc(100vw - 32px) !important;
   }
@@ -6309,7 +7273,6 @@ const downloadImage = (url: string) => {
   
   .global-account-container.mobile-open {
     transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
   }
   
   .accountTriggerAvatar {
@@ -6352,14 +7315,18 @@ const downloadImage = (url: string) => {
   }
 
   .input-container {
-    max-width: 95%;
-    width: 100%;
-    padding: 12px;
-    border-radius: 16px;
+    max-width: 100%;
+    width: calc(100% - 32px);
+    padding: 10px 8px 8px;
+    border-radius: 18px;
+    border: 1px solid rgba(229, 231, 235, 0.6);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 6px 20px rgba(15, 23, 42, 0.06);
   }
 
   .input-area-wrapper {
-    padding: 10px 0 10px 0;
+    padding: 8px 0 calc(10px + env(safe-area-inset-bottom)) 0;
   }
 
   .message-inner {
@@ -6391,12 +7358,15 @@ const downloadImage = (url: string) => {
     display: flex;
     align-items: center;
     margin-right: 0px; /* 移动端下移除右侧间距，让它更靠近文本 */
+    margin-top: 0px; /* 移动端不需要额外下移，保持原有布局 */
     flex-shrink: 0;
     max-width: calc(100vw - 120px); /* 留出输入框和发送按钮的空间 */
     overflow-x: auto;
     overflow-y: visible; /* 允许上下内容溢出，防止截断 */
     scrollbar-width: none;
     -ms-overflow-style: none;
+    padding: 24px 4px; /* 增加上下内边距，防止旋转或放大的图片被截断遮挡 */
+    margin: -24px -4px; /* 负外边距抵消 padding 的影响，保持原本的布局位置 */
   }
 
   .reference-image-preview-inline::-webkit-scrollbar {
@@ -6431,7 +7401,7 @@ const downloadImage = (url: string) => {
 
   .model-dropdown-wrapper {
     max-width: 100%;
-    flex: 0 0 auto; /* 改为固定大小，不允许压缩，以支持横向滑动 */
+    flex: 0 1 auto; /* 允许压缩：模型名过长时自身省略，保证右侧设置按钮完整可见 */
     min-width: 0;
   }
   
@@ -6446,6 +7416,7 @@ const downloadImage = (url: string) => {
     justify-content: center;
     box-sizing: border-box;
     flex: 0 0 auto;
+    min-width: 0; /* 覆盖桌面端 min-width: 100px，避免窄屏下挤压同行其他按钮 */
     border-radius: 16px;
     background-color: #ffffff; /* 增加背景色 */
     border: 1px solid #e5e7eb; /* 增加边框 */
@@ -6454,6 +7425,7 @@ const downloadImage = (url: string) => {
 
   .model-settings-btn {
     justify-content: flex-start; /* 模型名字靠左，箭头靠右（如果有足够空间） */
+    min-width: 0; /* 覆盖桌面端 100px 最小宽度，允许模型名过长时收缩省略 */
   }
 
   .model-btn-content {
@@ -6467,7 +7439,7 @@ const downloadImage = (url: string) => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 160px; /* 在手机端给个合理的最大宽度 */
+    max-width: 140px; /* 收紧手机端模型名宽度，为右侧设置按钮留出空间 */
     line-height: 1.5;
   }
 
@@ -6487,21 +7459,43 @@ const downloadImage = (url: string) => {
   }
   
   /* 手机端图片网格排版优化：智能分配列数 */
-  .image-grid-container:not(.grid-count-1) {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
+  .grid-count-1 {
+    width: 260px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   
-  /* 只有 3, 6, 9 张图时，使用 3 列以保证完美对齐，其余多图统一使用 2 列以保证图片够大 */
-  .image-grid-container.grid-count-3,
-  .image-grid-container.grid-count-6,
-  .image-grid-container.grid-count-9 {
-    grid-template-columns: repeat(3, 1fr) !important;
+  .image-grid-container:not(.grid-count-1) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 260px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .generating-placeholder {
+    min-height: 80px !important;
+  }
+  
+  .generating-spinner {
+    font-size: 22px !important;
+  }
+  
+  .generating-text {
+    font-size: 12px !important;
   }
   
   .generated-image {
-    min-height: 80px;
+    min-height: auto !important;
     border-radius: 8px;
+    object-fit: contain !important;
+  }
+
+  .image-skeleton.small { height: 160px !important; width: 160px !important; }
+  .image-skeleton.medium { height: 220px !important; width: 220px !important; }
+  .image-skeleton.large { height: 260px !important; width: 260px !important; }
+  .action-bar-bottom {
+    margin-left: 0;
   }
 }
 
@@ -6649,6 +7643,7 @@ const downloadImage = (url: string) => {
   display: flex;
   gap: 12px;
   align-items: center;
+  margin-top: 4px;
 }
 
 .balance-recharge-btn,
@@ -7137,18 +8132,18 @@ const downloadImage = (url: string) => {
 .combined-settings-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: #f4f4f5;
-  border: 1px solid transparent;
-  border-radius: 20px;
-  padding: 4px 14px;
-  height: 34px;
-  font-size: 13px;
+  gap: 4px;
+  background: rgba(244, 244, 245, 0.95);
+  border: 1px solid rgba(228, 228, 231, 0.7);
+  border-radius: 14px;
+  padding: 2px 10px;
+  height: 26px;
+  font-size: 12px;
   color: #3f3f46;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
 .combined-settings-btn:hover {
@@ -7162,7 +8157,7 @@ const downloadImage = (url: string) => {
 }
 
 .combined-settings-btn .el-icon {
-  font-size: 15px;
+  font-size: 13px;
   color: #71717a;
   transition: color 0.25s ease;
 }
@@ -7575,5 +8570,101 @@ const downloadImage = (url: string) => {
 }
 .el-dialog.premium-redeem-dialog .el-dialog__body {
   padding: 0 !important;
+}
+</style>
+<style scoped>
+@media (max-width: 768px) {
+  :deep(.chat-input) {
+    min-height: 36px !important;
+  }
+  
+  :deep(.chat-input .el-textarea__inner) {
+    min-height: 36px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    display: block !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* 移动端滚动条样式 */
+  :deep(.chat-input .el-textarea__inner::-webkit-scrollbar) {
+    width: 4px;
+  }
+  :deep(.chat-input .el-textarea__inner::-webkit-scrollbar-thumb) {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+  }
+  :deep(.chat-input .el-textarea__inner::-webkit-scrollbar-track) {
+    background: transparent;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input) {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk .input-box {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input.has-references) {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk .input-box.has-refs {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input.has-references .el-textarea__inner) {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    max-height: 36px !important;
+    margin-left: -8px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner) {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 13px !important;
+    line-height: 20px !important;
+    display: block !important;
+    max-height: 36px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    margin-left: -8px !important; /* 手机端输入框向左移动更多，靠近图片 */
+  }
+  
+  .input-area-wrapper.is-shrunk :deep(.chat-input .el-textarea__inner::placeholder) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 20px !important;
+  }
+  
+  :deep(.chat-input .el-textarea__inner::placeholder) {
+    line-height: 20px !important;
+  }
+
+  .input-box {
+    min-height: 36px !important;
+    padding: 0px 0px !important;
+  }
+  
+  .input-area-wrapper.is-shrunk .input-box {
+    min-height: 28px !important;
+    padding: 0px 0px !important;
+  }
 }
 </style>

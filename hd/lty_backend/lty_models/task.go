@@ -686,7 +686,7 @@ func extractFilesToDelete(jsonStr string) []string {
 
 // MoveSession 移动会话到指定项目组
 func MoveSession(userID uint, sessionID string, projectID uint) error {
-	query := "UPDATE lty_tasks SET project_id = ? WHERE user_id = ? AND session_id = ?"
+	query := "UPDATE lty_tasks SET project_id = ?, updated_at = updated_at WHERE user_id = ? AND session_id = ?"
 	_, err := lty_config.DB.Exec(query, projectID, userID, sessionID)
 	return err
 }
@@ -777,7 +777,7 @@ func ReorderSessions(userID uint, sessionIDs []string) error {
 	}
 
 	if len(idsToUpdate) > 0 {
-		caseSql.WriteString("END WHERE user_id = ? AND id IN (")
+		caseSql.WriteString("END, updated_at = updated_at WHERE user_id = ? AND id IN (")
 		placeholders := make([]string, len(idsToUpdate))
 		for i := range placeholders {
 			placeholders[i] = "?"

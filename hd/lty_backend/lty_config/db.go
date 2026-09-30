@@ -142,6 +142,8 @@ func AutoMigrate() error {
 			image_url VARCHAR(1000) DEFAULT '',
 			main_category VARCHAR(100) DEFAULT '',
 			sub_category VARCHAR(100) DEFAULT '',
+			need_reference_image BOOLEAN DEFAULT FALSE,
+			is_active BOOLEAN DEFAULT TRUE,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
@@ -163,9 +165,10 @@ func AutoMigrate() error {
 	DB.Exec(`ALTER TABLE lty_inspirations ADD COLUMN image_url VARCHAR(1000) DEFAULT ''`)
 	DB.Exec(`ALTER TABLE lty_inspirations ADD COLUMN main_category VARCHAR(100) DEFAULT ''`)
 	DB.Exec(`ALTER TABLE lty_inspirations ADD COLUMN sub_category VARCHAR(100) DEFAULT ''`)
+	DB.Exec(`ALTER TABLE lty_inspirations ADD COLUMN need_reference_image BOOLEAN DEFAULT FALSE`)
+	DB.Exec(`ALTER TABLE lty_inspirations ADD COLUMN is_active BOOLEAN DEFAULT TRUE`)
 	DB.Exec(`ALTER TABLE lty_inspirations DROP COLUMN title`)
 	DB.Exec(`ALTER TABLE lty_inspirations DROP COLUMN sort_order`)
-	DB.Exec(`ALTER TABLE lty_inspirations DROP COLUMN is_active`)
 	
 	// 扩展积分字段类型支持更大的数值
 	DB.Exec(`ALTER TABLE lty_users MODIFY COLUMN points DECIMAL(20,4) NOT NULL DEFAULT 0.0000`)

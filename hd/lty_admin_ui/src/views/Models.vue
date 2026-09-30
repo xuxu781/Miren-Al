@@ -183,7 +183,12 @@
           <el-input v-model="addForm.channel_name" placeholder="标识当前第三方API来源渠道，例如: 中转A站、直连等" />
         </el-form-item>
         <el-form-item label="连接地址" prop="connection_url">
-          <el-input v-model="addForm.connection_url" placeholder="API Base URL" />
+          <div style="width: 100%;">
+            <el-input v-model="addForm.connection_url" placeholder="API Base URL" />
+            <div style="font-size: 12px; color: #909399; margin-top: 4px; line-height: 1.2;">
+              只需输入基础域名（如 https://api.example.com），系统会自动拼接 /v1/images/generations 等后缀
+            </div>
+          </div>
         </el-form-item>
         <el-form-item label="API Key" prop="api_key">
           <el-input v-model="addForm.api_key" type="password" placeholder="API 密钥" show-password />
@@ -193,7 +198,7 @@
           <div @click="showAddImageConfig = !showAddImageConfig" style="cursor: pointer; user-select: none;">
             <el-divider content-position="left">
               <span style="display: flex; align-items: center; gap: 4px; color: #409eff;">
-                图片模型配置 (可选)
+                图片模型配置 <span style="color: #f56c6c;">(必填)</span>
                 <el-icon><ArrowDown v-if="showAddImageConfig" /><ArrowRight v-else /></el-icon>
               </span>
             </el-divider>
@@ -339,17 +344,22 @@
           <el-input v-model="editForm.channel_name" placeholder="标识当前第三方API来源渠道，例如: 中转A站、直连等" />
         </el-form-item>
         <el-form-item label="连接地址" prop="connection_url">
-          <el-input v-model="editForm.connection_url" placeholder="API Base URL" />
+          <div style="width: 100%;">
+            <el-input v-model="editForm.connection_url" placeholder="API Base URL" />
+            <div style="font-size: 12px; color: #909399; margin-top: 4px; line-height: 1.2;">
+              只需输入基础域名（如 https://api.example.com），系统会自动拼接 /v1/images/generations 等后缀
+            </div>
+          </div>
         </el-form-item>
         <el-form-item label="API Key" prop="api_key">
-          <el-input v-model="editForm.api_key" type="password" placeholder="API 密钥 (留空不修改)" show-password />
+          <el-input v-model="editForm.api_key" type="password" placeholder="API 密钥" show-password />
         </el-form-item>
 
         <template v-if="editForm.model_type === 4">
           <div @click="showEditImageConfig = !showEditImageConfig" style="cursor: pointer; user-select: none;">
             <el-divider content-position="left">
               <span style="display: flex; align-items: center; gap: 4px; color: #409eff;">
-                图片模型配置 (可选)
+                图片模型配置 <span style="color: #f56c6c;">(必填)</span>
                 <el-icon><ArrowDown v-if="showEditImageConfig" /><ArrowRight v-else /></el-icon>
               </span>
             </el-divider>
@@ -688,6 +698,7 @@ const rules = {
   provider: [{ required: true, message: '请输入提供商', trigger: 'blur' }],
   channel_name: [{ required: true, message: '请输入渠道名称', trigger: 'blur' }],
   connection_url: [{ required: true, message: '请输入连接地址', trigger: 'blur' }],
+  api_key: [{ required: true, message: '请输入API Key', trigger: 'blur' }],
   aspect_ratios: [{ validator: validateAspectRatios, trigger: 'blur' }]
 }
 
@@ -777,6 +788,10 @@ const handleAdd = async () => {
   if (!addFormRef.value) return
   await addFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
+      if (addForm.value.model_type === 4 && (!addForm.value.resolution_tiers || addForm.value.resolution_tiers.length === 0)) {
+        ElMessage.error('图片模型请至少添加1个档位配置')
+        return
+      }
       submitLoading.value = true
       try {
         const payload: any = { ...addForm.value }
@@ -859,6 +874,10 @@ const handleEdit = async () => {
   if (!editFormRef.value) return
   await editFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
+      if (editForm.value.model_type === 4 && (!editForm.value.resolution_tiers || editForm.value.resolution_tiers.length === 0)) {
+        ElMessage.error('图片模型请至少添加1个档位配置')
+        return
+      }
       editLoading.value = true
       try {
         const payload: any = { ...editForm.value }

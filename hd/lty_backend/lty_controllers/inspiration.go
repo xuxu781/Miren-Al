@@ -10,16 +10,20 @@ import (
 )
 
 type CreateInspirationReq struct {
-	Content      string `json:"content"`
-	ImageURL     string `json:"image_url"`
-	MainCategory string `json:"main_category"`
-	SubCategory  string `json:"sub_category"`
+	Content            string `json:"content"`
+	ImageURL           string `json:"image_url"`
+	MainCategory       string `json:"main_category"`
+	SubCategory        string `json:"sub_category"`
+	NeedReferenceImage bool   `json:"need_reference_image"`
+	IsActive           bool   `json:"is_active"`
 }
 
 func CreateInspiration(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var req CreateInspirationReq
+	// 默认为 true
+	req.IsActive = true
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "参数错误"})
@@ -32,7 +36,7 @@ func CreateInspiration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := lty_config.DB.Exec("INSERT INTO lty_inspirations (content, image_url, main_category, sub_category) VALUES (?, ?, ?, ?)", req.Content, req.ImageURL, req.MainCategory, req.SubCategory)
+	_, err := lty_config.DB.Exec("INSERT INTO lty_inspirations (content, image_url, main_category, sub_category, need_reference_image, is_active) VALUES (?, ?, ?, ?, ?, ?)", req.Content, req.ImageURL, req.MainCategory, req.SubCategory, req.NeedReferenceImage, req.IsActive)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "创建失败: " + err.Error()})
@@ -43,11 +47,13 @@ func CreateInspiration(w http.ResponseWriter, r *http.Request) {
 }
 
 type UpdateInspirationReq struct {
-	ID           uint   `json:"id"`
-	Content      string `json:"content"`
-	ImageURL     string `json:"image_url"`
-	MainCategory string `json:"main_category"`
-	SubCategory  string `json:"sub_category"`
+	ID                 uint   `json:"id"`
+	Content            string `json:"content"`
+	ImageURL           string `json:"image_url"`
+	MainCategory       string `json:"main_category"`
+	SubCategory        string `json:"sub_category"`
+	NeedReferenceImage bool   `json:"need_reference_image"`
+	IsActive           bool   `json:"is_active"`
 }
 
 func UpdateInspiration(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +72,7 @@ func UpdateInspiration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := lty_config.DB.Exec("UPDATE lty_inspirations SET content = ?, image_url = ?, main_category = ?, sub_category = ? WHERE id = ?", req.Content, req.ImageURL, req.MainCategory, req.SubCategory, req.ID)
+	_, err := lty_config.DB.Exec("UPDATE lty_inspirations SET content = ?, image_url = ?, main_category = ?, sub_category = ?, need_reference_image = ?, is_active = ? WHERE id = ?", req.Content, req.ImageURL, req.MainCategory, req.SubCategory, req.NeedReferenceImage, req.IsActive, req.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "更新失败: " + err.Error()})
@@ -145,6 +151,8 @@ func GetInspirations(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("page_size")
 	search := r.URL.Query().Get("search")
+	mainCategory := r.URL.Query().Get("main_category")
+	subCategory := r.URL.Query().Get("sub_category")
 
 	page := 1
 	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -165,6 +173,14 @@ func GetInspirations(w http.ResponseWriter, r *http.Request) {
 		whereClause += " AND content LIKE ?"
 		args = append(args, "%"+search+"%")
 	}
+	if mainCategory != "" {
+		whereClause += " AND main_category = ?"
+		args = append(args, mainCategory)
+	}
+	if subCategory != "" {
+		whereClause += " AND sub_category = ?"
+		args = append(args, subCategory)
+	}
 
 	var total int
 	if err := lty_config.DB.QueryRow("SELECT COUNT(*) FROM lty_inspirations WHERE "+whereClause, args...).Scan(&total); err != nil {
@@ -173,7 +189,7 @@ func GetInspirations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := "SELECT id, content, IFNULL(image_url, ''), IFNULL(main_category, ''), IFNULL(sub_category, ''), created_at, updated_at FROM lty_inspirations WHERE " + whereClause + " ORDER BY id DESC LIMIT ? OFFSET ?"
+	query := "SELECT id, content, IFNULL(image_url, ''), IFNULL(main_category, ''), IFNULL(sub_category, ''), need_reference_image, is_active, created_at, updated_at FROM lty_inspirations WHERE " + whereClause + " ORDER BY id DESC LIMIT ? OFFSET ?"
 	args = append(args, pageSize, offset)
 
 	rows, err := lty_config.DB.Query(query, args...)
@@ -187,7 +203,7 @@ func GetInspirations(w http.ResponseWriter, r *http.Request) {
 	var list []lty_models.Inspiration
 	for rows.Next() {
 		var item lty_models.Inspiration
-		if err := rows.Scan(&item.ID, &item.Content, &item.ImageURL, &item.MainCategory, &item.SubCategory, &item.CreatedAt, &item.UpdatedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.Content, &item.ImageURL, &item.MainCategory, &item.SubCategory, &item.NeedReferenceImage, &item.IsActive, &item.CreatedAt, &item.UpdatedAt); err != nil {
 			continue
 		}
 		list = append(list, item)
@@ -225,7 +241,7 @@ func GetPublicInspirations(w http.ResponseWriter, r *http.Request) {
 
 	offset := (page - 1) * pageSize
 
-	whereClause := "1=1"
+	whereClause := "is_active = 1"
 	var args []interface{}
 
 	if mainCategory != "" {
@@ -244,9 +260,9 @@ func GetPublicInspirations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := "SELECT id, content, IFNULL(image_url, ''), IFNULL(main_category, ''), IFNULL(sub_category, ''), created_at, updated_at FROM lty_inspirations WHERE " + whereClause + " ORDER BY id DESC LIMIT ? OFFSET ?"
+	query := "SELECT id, content, IFNULL(image_url, ''), IFNULL(main_category, ''), IFNULL(sub_category, ''), need_reference_image, is_active, created_at, updated_at FROM lty_inspirations WHERE " + whereClause + " ORDER BY id DESC LIMIT ? OFFSET ?"
 	args = append(args, pageSize, offset)
-	
+
 	rows, err := lty_config.DB.Query(query, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -258,7 +274,7 @@ func GetPublicInspirations(w http.ResponseWriter, r *http.Request) {
 	var list []lty_models.Inspiration
 	for rows.Next() {
 		var item lty_models.Inspiration
-		if err := rows.Scan(&item.ID, &item.Content, &item.ImageURL, &item.MainCategory, &item.SubCategory, &item.CreatedAt, &item.UpdatedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.Content, &item.ImageURL, &item.MainCategory, &item.SubCategory, &item.NeedReferenceImage, &item.IsActive, &item.CreatedAt, &item.UpdatedAt); err != nil {
 			continue
 		}
 		list = append(list, item)

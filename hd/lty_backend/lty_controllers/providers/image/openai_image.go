@@ -93,15 +93,43 @@ func ProcessOpenAIImageTask(
 				localPath := refImg[idx+1:]
 				fileBytes, err := os.ReadFile(localPath)
 				if err == nil {
-					fieldName := "image"
-					if i > 0 {
-						fieldName = fmt.Sprintf("image%d", i+1)
-					}
-					fw, err := w.CreateFormFile(fieldName, filepath.Base(localPath))
-					if err == nil {
-						fw.Write(fileBytes)
+					isZhimeng := strings.Contains(reqURL, "zmoapi.cn") || strings.Contains(reqURL, "zhimeng")
+					if isZhimeng {
+						// 知梦 API 专属逻辑：严格只发送 image[]，避免与 image 字段冲突导致其只读取单图
+						if fwArr, errArr := w.CreateFormFile("image[]", filepath.Base(localPath)); errArr == nil {
+							fwArr.Write(fileBytes)
+						}
 					} else {
-						updateLog("Failed to create form file: " + err.Error())
+						// 1. 兼容常规的 image, image2, image3 等格式
+						fieldName := "image"
+						if i > 0 {
+							fieldName = fmt.Sprintf("image%d", i+1)
+						}
+						if fw, err := w.CreateFormFile(fieldName, filepath.Base(localPath)); err == nil {
+							fw.Write(fileBytes)
+						}
+						
+						// 2. 专门针对类似 zhimengapi 的 image[] 数组格式
+						if fwArr, errArr := w.CreateFormFile("image[]", filepath.Base(localPath)); errArr == nil {
+							fwArr.Write(fileBytes)
+						}
+						
+						// 3. 兼容 images[] 格式
+						if fwArr2, errArr2 := w.CreateFormFile("images[]", filepath.Base(localPath)); errArr2 == nil {
+							fwArr2.Write(fileBytes)
+						}
+						
+						// 4. 兼容 images 格式 (同名字段传多次)
+						if fwArr3, errArr3 := w.CreateFormFile("images", filepath.Base(localPath)); errArr3 == nil {
+							fwArr3.Write(fileBytes)
+						}
+						
+						// 5. 对于第一张图，提供 file 字段以防极个别 API 需要
+						if i == 0 {
+							if fwFile, errFile := w.CreateFormFile("file", filepath.Base(localPath)); errFile == nil {
+								fwFile.Write(fileBytes)
+							}
+						}
 					}
 				} else {
 					updateLog("Failed to read local image for multipart conversion: " + err.Error())
@@ -133,7 +161,12 @@ func ProcessOpenAIImageTask(
 			}
 
 			if len(refImages) > 0 {
+				var promptURLs []string
+				var base64Data []string
+				var firstImage string
+
 				for i, refImg := range refImages {
+					var currentImg string
 					if idx := strings.Index(refImg, "/uploads/"); idx != -1 {
 						if !useURL {
 							// 非 URL 模式：将本地图片路径转换为 Base64
@@ -148,32 +181,76 @@ func ProcessOpenAIImageTask(
 									mimeType = "image/webp"
 								}
 								base64Str := base64.StdEncoding.EncodeToString(fileBytes)
-								refImages[i] = fmt.Sprintf("data:%s;base64,%s", mimeType, base64Str)
+								currentImg = fmt.Sprintf("data:%s;base64,%s", mimeType, base64Str)
+								base64Data = append(base64Data, currentImg)
 							} else {
 								updateLog("Failed to read local image for base64 conversion: " + err.Error())
 							}
 						} else {
 							// URL 模式：强制替换为当前最新的公网域名
 							baseURL := getBaseURL(nil)
-							refImages[i] = baseURL + refImg[idx:]
+							currentImg = baseURL + refImg[idx:]
+							// 知梦 API 强制要求 HTTPS 链接，如果当前环境为 HTTP，且上游为 zhimeng，则尝试替换为 HTTPS
+							isZhimeng := strings.Contains(reqURL, "zmoapi.cn") || strings.Contains(reqURL, "zhimeng")
+							if isZhimeng && strings.HasPrefix(currentImg, "http://") {
+							    // 只有在使用默认端口或其他明显是公网域名时才替换
+							    // 对于内网 IP 如 127.0.0.1 或者局域网 IP，如果强转 HTTPS 会导致图片无法访问
+							    // 但因为上游强制要求 HTTPS，所以我们只能无条件替换
+							    currentImg = strings.Replace(currentImg, "http://", "https://", 1)
+							}
+							promptURLs = append(promptURLs, currentImg)
+						}
+					} else {
+						currentImg = refImg
+						if strings.HasPrefix(refImg, "http") {
+						    isZhimeng := strings.Contains(reqURL, "zmoapi.cn") || strings.Contains(reqURL, "zhimeng")
+							if isZhimeng && strings.HasPrefix(currentImg, "http://") {
+							    currentImg = strings.Replace(currentImg, "http://", "https://", 1)
+							}
+							promptURLs = append(promptURLs, currentImg)
+						} else if strings.HasPrefix(refImg, "data:") {
+							base64Data = append(base64Data, refImg)
 						}
 					}
+					
+					if i == 0 && currentImg != "" {
+						firstImage = currentImg
+					}
+					refImages[i] = currentImg // 更新回原数组以便后续传递
 				}
 
-				requestBody["prompt"] = refImages[0] + " " + prompt
-				requestBody["image_url"] = refImages[0]
-				
-				// 兼容 Agnes AI (要求 image 为数组) 与其他常规 API (要求 image 为字符串)
-				if strings.Contains(strings.ToLower(upstream.LogicalModel), "agnes") {
-					requestBody["image"] = refImages
+				// 只有 URL 模式的图片才能拼接到 prompt 里，Base64 绝对不能拼接进 prompt 否则会导致 Request Entity Too Large
+				if len(promptURLs) > 0 {
+					promptPrefix := strings.Join(promptURLs, " ")
+					requestBody["prompt"] = promptPrefix + " " + prompt
 				} else {
-					requestBody["image"] = refImages[0]
+					requestBody["prompt"] = prompt
+				}
+				
+				if len(refImages) == 1 {
+					requestBody["image_url"] = firstImage
+					requestBody["image"] = firstImage
+				} else {
+					requestBody["image_url"] = refImages
+					requestBody["image"] = refImages
+				}
+				
+				// Midjourney Proxy 专用多图参数 (必须是 Base64 格式数组)
+				if len(base64Data) > 0 {
+					requestBody["base64Array"] = base64Data
 				}
 				
 				if len(refImages) > 1 {
-					requestBody["images"] = refImages
+					requestBody["images_flat"] = refImages
 					requestBody["image_urls"] = refImages
 				}
+				
+				// 兼容 zhimengapi/OpenAI 的 Images 数组对象格式 [{"image_url": "..."}]
+				var zhimengImages []map[string]string
+				for _, img := range refImages {
+				    zhimengImages = append(zhimengImages, map[string]string{"image_url": img})
+				}
+				requestBody["images"] = zhimengImages
 			}
 		}
 
