@@ -484,6 +484,20 @@ func SetupRouter() http.Handler {
 		}
 		lty_middlewares.AdminAuth(lty_controllers.GetInspirationCategories)(w, r)
 	})
+	mux.HandleFunc("/api/admin/inspiration-categories/sync", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		lty_middlewares.AdminAuth(lty_controllers.SyncInspirationCategories)(w, r)
+	})
+	mux.HandleFunc("/api/admin/inspiration-categories/list", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		lty_middlewares.AdminAuth(lty_controllers.GetAllInspirationCategories)(w, r)
+	})
 	mux.HandleFunc("/api/admin/inspirations/create", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)

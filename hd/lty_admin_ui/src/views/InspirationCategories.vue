@@ -235,7 +235,7 @@ const removeCategory = async (index: number) => {
   newCategories.splice(index, 1)
   
   try {
-    await saveSetting('inspiration_categories', JSON.stringify(newCategories), '探索分类设置')
+    await saveCategories(newCategories)
     inspirationCategories.value = newCategories
     ElMessage.success('删除成功')
   } catch (error) {
@@ -245,7 +245,7 @@ const removeCategory = async (index: number) => {
 
 const saveCategoriesOrder = async () => {
   try {
-    await saveSetting('inspiration_categories', JSON.stringify(inspirationCategories.value), '探索分类设置')
+    await saveCategories(inspirationCategories.value)
     ElMessage.success('顺序已保存')
   } catch (error) {
     ElMessage.error('保存顺序失败')
@@ -285,34 +285,30 @@ const getHeaders = () => {
   }
 }
 
-const fetchSetting = async (keyName: string) => {
+const loadCategoriesData = async () => {
   try {
-    const res = await fetch(`${(window as any).APP_CONFIG?.API_BASE_URL || ''}/api/admin/settings/get?key_name=${keyName}`, {
+    const res = await fetch(`${(window as any).APP_CONFIG?.API_BASE_URL || ''}/api/admin/inspiration-categories/list`, {
       headers: { ...getHeaders(), 'Content-Type': 'application/json' }
     })
     if (res.ok) {
       const json = await res.json()
-      return json.data?.key_value || ''
+      return json.data || []
     }
   } catch (error) {
-    console.error(`Failed to fetch setting ${keyName}`, error)
+    console.error(`Failed to fetch categories`, error)
   }
-  return ''
+  return []
 }
 
-const saveSetting = async (keyName: string, keyValue: string, description: string) => {
+const saveCategories = async (categories: CategoryItem[]) => {
   try {
-    const res = await fetch(`${(window as any).APP_CONFIG?.API_BASE_URL || ''}/api/admin/settings/save`, {
+    const res = await fetch(`${(window as any).APP_CONFIG?.API_BASE_URL || ''}/api/admin/inspiration-categories/sync`, {
       method: 'POST',
       headers: { ...getHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        key_name: keyName,
-        key_value: keyValue,
-        description: description
-      })
+      body: JSON.stringify(categories)
     })
     if (!res.ok) {
-      throw new Error(`Failed to save ${keyName}`)
+      throw new Error(`Failed to save categories`)
     }
   } catch (error) {
     throw error
@@ -340,7 +336,7 @@ const saveDialogCategory = async () => {
       })
     }
     
-    await saveSetting('inspiration_categories', JSON.stringify(newCategories), '探索分类设置')
+    await saveCategories(newCategories)
     inspirationCategories.value = newCategories
     dialogVisible.value = false
     ElMessage.success('保存成功')
@@ -354,18 +350,12 @@ const saveDialogCategory = async () => {
 const loadSettings = async () => {
   loading.value = true
   try {
-    const catsStr = await fetchSetting('inspiration_categories')
-    if (catsStr) {
-      try {
-        const parsed = JSON.parse(catsStr)
-        inspirationCategories.value = parsed.map((c: any) => ({
-          name: c.name,
-          sub: c.sub || []
-        }))
-      } catch (e) {
-        console.error('Failed to parse categories', e)
-        inspirationCategories.value = []
-      }
+    const cats = await loadCategoriesData()
+    if (cats && Array.isArray(cats)) {
+      inspirationCategories.value = cats.map((c: any) => ({
+        name: c.name,
+        sub: c.sub || []
+      }))
     } else {
       inspirationCategories.value = []
     }
