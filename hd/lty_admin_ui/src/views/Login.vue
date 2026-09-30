@@ -1,56 +1,57 @@
 <template>
   <div class="login-container">
-    <div class="login-box">
-      <div class="login-left">
-        <div class="login-info">
-          <h2>Welcome to</h2>
-          <h1>{{ siteName }}</h1>
-          <p>高效、简洁、美观的现代化后台管理系统</p>
+    <!-- 动态背景光球 -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+    
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-wrapper" v-if="siteLogo">
+          <img :src="siteLogo" alt="logo" />
         </div>
-        <div class="decoration-circle top-circle"></div>
-        <div class="decoration-circle bottom-circle"></div>
+        <h2>{{ siteName }}后台管理</h2>
+        <p class="subtitle">欢迎回来，请登录您的账户</p>
       </div>
-      <div class="login-right">
-        <div class="login-form-container">
-          <div class="form-header">
-            <div class="logo-image" v-if="siteLogo">
-              <img :src="siteLogo" alt="logo" />
-            </div>
-            <h3>账号登录</h3>
-            <p>请输入您的用户名和密码</p>
-          </div>
-          <el-form :model="form" label-position="top" size="large" class="login-form" autocomplete="off">
-            <el-form-item>
-              <el-input 
-                v-model="form.username" 
-                placeholder="用户名" 
-                :prefix-icon="User"
-                autocomplete="off"
-              />
-            </el-form-item>
-            <el-form-item>
-              <el-input 
-                v-model="form.password" 
-                type="password" 
-                placeholder="密码" 
-                :prefix-icon="Lock"
-                show-password 
-                @keyup.enter="handleLogin"
-                autocomplete="new-password"
-              />
-            </el-form-item>
-            <div class="form-options">
-              <el-checkbox v-model="form.remember" @change="handleRememberChange">记住密码</el-checkbox>
-              <el-link type="primary" :underline="false">忘记密码？</el-link>
-            </div>
-            <el-form-item>
-              <el-button type="primary" class="login-btn" @click="handleLogin" :loading="loading">
-                登录
-              </el-button>
-            </el-form-item>
-          </el-form>
+
+      <el-form :model="form" class="login-form" autocomplete="off" @submit.prevent>
+        <el-form-item>
+          <el-input 
+            v-model="form.username" 
+            placeholder="用户名" 
+            :prefix-icon="User"
+            autocomplete="off"
+            size="large"
+          />
+        </el-form-item>
+        
+        <el-form-item>
+          <el-input 
+            v-model="form.password" 
+            type="password" 
+            placeholder="密码" 
+            :prefix-icon="Lock"
+            show-password 
+            @keyup.enter="handleLogin"
+            autocomplete="new-password"
+            size="large"
+          />
+        </el-form-item>
+
+        <div class="form-options">
+          <el-checkbox v-model="form.remember" @change="handleRememberChange">记住密码</el-checkbox>
+          <a href="javascript:void(0)" class="forgot-link">忘记密码？</a>
         </div>
-      </div>
+
+        <el-button class="submit-btn" :loading="loading" @click="handleLogin">
+          登 录
+        </el-button>
+      </el-form>
+    </div>
+
+    <!-- 版权信息 -->
+    <div class="copyright">
+      徐州邻兔跃IT提供技术支持 版权所有
     </div>
   </div>
 </template>
@@ -60,10 +61,11 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import defaultLogo from '../assets/logo/logo.png'
 
 const router = useRouter()
 const loading = ref(false)
-const siteLogo = ref(localStorage.getItem('admin_site_logo') || '')
+const siteLogo = ref(localStorage.getItem('admin_site_logo') || defaultLogo)
 const siteName = ref(localStorage.getItem('admin_site_name') || 'Miren Al')
 const form = reactive({
   username: '',
@@ -81,9 +83,10 @@ const fetchSettings = async () => {
           siteLogo.value = json.data.site_logo
           localStorage.setItem('admin_site_logo', json.data.site_logo)
         } else {
-          siteLogo.value = ''
+          siteLogo.value = defaultLogo
           localStorage.removeItem('admin_site_logo')
         }
+        window.dispatchEvent(new StorageEvent('storage', { key: 'admin_site_logo', newValue: siteLogo.value }))
       }
       if (json.data.site_name !== undefined) {
         if (json.data.site_name) {
@@ -93,6 +96,7 @@ const fetchSettings = async () => {
           siteName.value = 'Miren Al'
           localStorage.removeItem('admin_site_name')
         }
+        window.dispatchEvent(new StorageEvent('storage', { key: 'admin_site_name', newValue: siteName.value }))
       }
     }
   } catch (error) {
@@ -166,171 +170,253 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background: #f0f2f5;
-  background-image: url('data:image/svg+xml,%3Csvg width="100%25" height="100%25" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"%3E%3Cpath d="M 40 0 L 0 0 0 40" fill="none" stroke="%23e8e8e8" stroke-width="1"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%25" height="100%25" fill="url(%23grid)"/%3E%3C/svg%3E');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f2f5;
   position: relative;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-.login-box {
-  display: flex;
-  width: 900px;
-  height: 520px;
-  background-color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px 4px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  z-index: 10;
-}
-
-.login-left {
-  flex: 5;
-  background: linear-gradient(135deg, #1e1e2d 0%, #2b2b40 100%);
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 50px;
-  position: relative;
-  overflow: hidden;
-}
-
-.decoration-circle {
+/* 动态背景光球 */
+.bg-orb {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  filter: blur(80px);
+  z-index: 0;
+  animation: float 15s infinite ease-in-out;
+  opacity: 0.6;
 }
 
-.top-circle {
-  width: 300px;
-  height: 300px;
-  top: -100px;
+.orb-1 {
+  width: 500px;
+  height: 500px;
+  background: #409eff;
+  top: -150px;
+  left: -150px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 400px;
+  height: 400px;
+  background: #67c23a;
+  bottom: -100px;
   right: -100px;
+  animation-delay: -5s;
 }
 
-.bottom-circle {
-  width: 200px;
-  height: 200px;
-  bottom: -50px;
-  left: -50px;
+.orb-3 {
+  width: 450px;
+  height: 450px;
+  background: #b37feb;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -10s;
 }
 
-.login-info {
-  position: relative;
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+/* 登录卡片 */
+.login-card {
+  width: 420px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 50px 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
   z-index: 1;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
-.login-info h2 {
-  font-size: 24px;
-  font-weight: 400;
-  margin: 0 0 10px 0;
-  color: rgba(255, 255, 255, 0.8);
+.login-card:hover {
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.login-info h1 {
-  font-size: 42px;
-  font-weight: 700;
-  margin: 0 0 20px 0;
-  color: #ffffff;
-}
-
-.login-info p {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0;
-  line-height: 1.6;
-}
-
-.login-right {
-  flex: 6;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px;
-  background-color: #ffffff;
-}
-
-.login-form-container {
-  width: 100%;
-  max-width: 340px;
-}
-
-.form-header {
-  margin-bottom: 30px;
+.login-header {
   text-align: center;
+  margin-bottom: 40px;
 }
 
-.form-header h3 {
-  font-size: 26px;
-  color: #303133;
-  margin: 0 0 8px 0;
-  font-weight: 600;
-}
-
-.form-header p {
-  font-size: 14px;
-  color: #909399;
-  margin: 0;
-}
-
-.logo-image {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 16px;
+.logo-wrapper {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 8px;
 }
 
-.logo-image img {
+.logo-wrapper img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 8px;
+}
+
+.login-header h2 {
+  font-size: 28px;
+  color: #1d1d1f;
+  margin: 0 0 8px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.login-header .subtitle {
+  font-size: 14px;
+  color: #86868b;
+  margin: 0;
 }
 
 .login-form {
-  margin-top: 20px;
+  margin-top: 10px;
+}
+
+:deep(.el-input__wrapper) {
+  background-color: #f5f5f7 !important;
+  box-shadow: none !important;
+  border-radius: 12px;
+  padding: 6px 16px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  background-color: #fff !important;
+  box-shadow: 0 0 0 2px #409eff, 0 4px 12px rgba(64, 158, 255, 0.2) !important;
+}
+
+:deep(.el-input__inner) {
+  height: 40px;
+  font-size: 15px;
+  color: #1d1d1f;
+}
+
+:deep(.el-input__prefix) {
+  font-size: 18px;
+  color: #86868b;
+  margin-right: 8px;
 }
 
 .form-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  margin-top: -10px;
+  margin: 10px 0 30px;
 }
 
-.login-btn {
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #409eff;
+  border-color: #409eff;
+}
+:deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #409eff;
+}
+
+.forgot-link {
+  font-size: 14px;
+  color: #86868b;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.forgot-link:hover {
+  color: #409eff;
+}
+
+.submit-btn {
   width: 100%;
-  height: 44px;
+  height: 48px;
+  border-radius: 12px;
   font-size: 16px;
-  border-radius: 8px;
-  margin-top: 10px;
-  font-weight: 500;
+  font-weight: 600;
+  background: linear-gradient(135deg, #409eff 0%, #2979ff 100%);
+  border: none;
+  color: #fff;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
 }
 
-:deep(.el-input__wrapper) {
-  border-radius: 8px;
-  padding: 4px 12px;
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
+.submit-btn:hover {
+  background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.4);
 }
 
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #409eff inset !important;
+.submit-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
-:deep(.el-input__inner) {
-  height: 40px;
+:deep(.el-form-item) {
+  margin-bottom: 24px;
 }
 
-:deep(.el-input__prefix) {
-  font-size: 18px;
-  color: #909399;
+.copyright {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  color: #86868b;
+  letter-spacing: 1px;
+  z-index: 10;
+}
+/* 响应式设计（手机端优化） */
+@media screen and (max-width: 480px) {
+  .login-card {
+    width: 90%;
+    padding: 40px 24px;
+    border-radius: 20px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  .login-header h2 {
+    font-size: 24px;
+  }
+
+  .bg-orb {
+    /* 手机端保留光球，但缩小尺寸和模糊度，避免影响性能并保持美观 */
+    filter: blur(40px);
+    opacity: 0.4;
+  }
+  
+  .orb-1 {
+    width: 250px;
+    height: 250px;
+    top: -50px;
+    left: -50px;
+  }
+
+  .orb-2 {
+    width: 200px;
+    height: 200px;
+    bottom: -50px;
+    right: -50px;
+  }
+
+  .orb-3 {
+    width: 220px;
+    height: 220px;
+  }
+
+  .copyright {
+    font-size: 12px;
+    bottom: 16px;
+  }
 }
 </style>

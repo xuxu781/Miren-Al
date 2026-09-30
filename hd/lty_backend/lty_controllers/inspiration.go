@@ -299,14 +299,7 @@ func GetPublicInspirationCategories(w http.ResponseWriter, r *http.Request) {
 	
 	if err != nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"categories": []map[string]interface{}{
-				{"name": "人物", "sub": []string{"其他"}},
-				{"name": "风景", "sub": []string{"其他"}},
-				{"name": "建筑", "sub": []string{"其他"}},
-				{"name": "科幻", "sub": []string{"其他"}},
-				{"name": "二次元", "sub": []string{"其他"}},
-				{"name": "其他", "sub": []string{"其他"}},
-			},
+			"categories": []map[string]interface{}{},
 		})
 		return
 	}
@@ -333,14 +326,7 @@ func GetPublicInspirationCategories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(result) == 0 {
-		result = []map[string]interface{}{
-			{"name": "人物", "sub": []string{"其他"}},
-			{"name": "风景", "sub": []string{"其他"}},
-			{"name": "建筑", "sub": []string{"其他"}},
-			{"name": "科幻", "sub": []string{"其他"}},
-			{"name": "二次元", "sub": []string{"其他"}},
-			{"name": "其他", "sub": []string{"其他"}},
-		}
+		result = []map[string]interface{}{}
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{

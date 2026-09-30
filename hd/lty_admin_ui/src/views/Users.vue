@@ -1,9 +1,9 @@
 <template>
   <div class="admin-container fade-in">
-    <div class="page-header">
+    <div class="page-header-modern">
       <div class="header-info">
         <div class="icon-wrapper">
-          <el-icon :size="24" color="#409eff"><User /></el-icon>
+          <el-icon :size="24"><User /></el-icon>
         </div>
         <div class="header-title">
           <h2>用户管理</h2>
@@ -18,7 +18,7 @@
           clearable
           @clear="handleSearch"
           @keyup.enter="handleSearch"
-          class="search-input"
+          class="modern-search"
         >
           <template #append>
             <el-button :icon="Search" @click="handleSearch" />
@@ -31,13 +31,12 @@
       </div>
     </div>
 
-    <el-card shadow="never" class="admin-card">
+    <el-card class="modern-card">
       <el-table 
         :data="userList" 
         v-loading="loading" 
         style="width: 100%" 
-        :header-cell-style="{ background: '#f8fafc', color: '#475569', fontWeight: '600', height: '54px' }"
-        row-class-name="custom-table-row"
+        class="modern-table"
       >
         <el-table-column prop="id" label="ID" width="100" align="center">
           <template #default="scope">
@@ -48,11 +47,8 @@
         <el-table-column prop="username" label="用户名" min-width="160">
           <template #default="scope">
             <div class="user-info">
-              <el-avatar :size="36" class="user-avatar" :style="{ background: getAvatarColor(scope.row.username) }">
-                {{ scope.row.username.charAt(0).toUpperCase() }}
-              </el-avatar>
               <div class="user-details">
-                <span class="username">{{ scope.row.username }}</span>
+                <span class="username">{{ scope.row.username || '未设置' }}</span>
               </div>
             </div>
           </template>
@@ -108,19 +104,19 @@
         <el-table-column label="操作" width="260" align="center" fixed="right">
           <template #default="scope">
             <div class="action-btns">
-              <el-tooltip content="积分记录" placement="top">
-                <el-button type="info" link @click="openPointsRecordDialog(scope.row)" class="action-btn">
+              <el-tooltip content="积分记录" placement="top" :hide-after="0">
+                <el-button link @click="openPointsRecordDialog(scope.row)" class="action-btn">
                   <el-icon :size="16"><List /></el-icon>
                 </el-button>
               </el-tooltip>
 
-              <el-tooltip content="编辑用户信息" placement="top">
-                <el-button type="primary" link @click="openEditDialog(scope.row)" class="action-btn">
+              <el-tooltip content="编辑用户信息" placement="top" :hide-after="0">
+                <el-button link @click="openEditDialog(scope.row)" class="action-btn">
                   <el-icon :size="16"><EditPen /></el-icon>
                 </el-button>
               </el-tooltip>
               
-              <el-tooltip content="删除用户" placement="top">
+              <el-tooltip content="删除用户" placement="top" :hide-after="0">
                 <div style="display: inline-block;">
                   <el-popconfirm 
                     title="确定要删除该用户吗？此操作不可恢复！" 
@@ -132,7 +128,7 @@
                     @confirm="handleDelete(scope.row)"
                   >
                     <template #reference>
-                      <el-button type="danger" link class="action-btn danger-btn">
+                      <el-button link class="action-btn danger-btn">
                         <el-icon :size="16"><Delete /></el-icon>
                       </el-button>
                     </template>
@@ -163,7 +159,7 @@
     </el-card>
 
     <!-- 添加用户对话框 -->
-    <el-dialog v-model="showAddDialog" title="添加新用户" width="500px" destroy-on-close class="custom-dialog">
+    <el-dialog append-to-body v-model="showAddDialog" title="添加新用户" width="500px" destroy-on-close class="custom-dialog">
       <div class="dialog-desc">填写基本信息以添加一个新的普通用户。</div>
       <el-form ref="addFormRef" :model="addForm" :rules="rules" label-width="80px" size="large" label-position="left">
         <el-form-item label="用户名" prop="username">
@@ -194,7 +190,7 @@
     </el-dialog>
 
     <!-- 编辑用户对话框 -->
-    <el-dialog v-model="showEditDialog" title="编辑用户信息" width="500px" destroy-on-close class="custom-dialog">
+    <el-dialog append-to-body v-model="showEditDialog" title="编辑用户信息" width="500px" destroy-on-close class="custom-dialog">
       <div class="dialog-desc">修改用户信息，如果不修改密码请留空。</div>
       <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="80px" size="large" label-position="left">
         <el-form-item label="邮箱" prop="email">
@@ -253,7 +249,7 @@
     </el-dialog>
 
     <!-- 积分记录对话框 -->
-    <el-dialog v-model="showPointsRecordDialog" :title="`${currentRecordUser} 的积分记录`" width="700px" destroy-on-close class="custom-dialog">
+    <el-dialog append-to-body v-model="showPointsRecordDialog" :title="`${currentRecordUser} 的积分记录`" width="700px" destroy-on-close class="custom-dialog">
       <el-table 
         :data="pointsRecordList" 
         v-loading="pointsRecordLoading" 
@@ -328,16 +324,6 @@ const handleCurrentChange = (val: number) => {
   fetchUserList()
 }
 
-const getAvatarColor = (name: string) => {
-  const colors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#8e44ad', '#16a085', '#d35400'];
-  if (!name) return colors[0];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-}
-
 const showAddDialog = ref(false)
 const submitLoading = ref(false)
 const addFormRef = ref()
@@ -346,7 +332,7 @@ const addForm = ref({
   password: '',
   email: '',
   phone: '',
-  points: 100.0,
+  points: 0.0,
   status: 1
 })
 
@@ -492,7 +478,7 @@ const handleAdd = async () => {
         if (res.ok) {
           ElMessage.success('添加成功')
           showAddDialog.value = false
-          addForm.value = { username: '', password: '', email: '', phone: '', points: 100.0, status: 1 }
+          addForm.value = { username: '', password: '', email: '', phone: '', points: 0.0, status: 1 }
           fetchUserList()
         } else {
           ElMessage.error(data.error || '添加失败')
@@ -627,20 +613,14 @@ onMounted(() => {
 }
 
 .admin-container {
-  padding: 24px;
-  background-color: #f1f5f9;
-  min-height: calc(100vh - 60px);
+  padding-top: 8px;
 }
 
-.page-header {
+.page-header-modern {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  background: #fff;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .header-info {
@@ -652,23 +632,25 @@ onMounted(() => {
 .icon-wrapper {
   width: 48px;
   height: 48px;
-  background: #e6f2ff;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(41, 121, 255, 0.05) 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #409eff;
 }
 
 .header-title h2 {
   margin: 0 0 4px 0;
-  font-size: 20px;
-  color: #1e293b;
-  font-weight: 600;
+  font-size: 24px;
+  color: #1d1d1f;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: #86868b;
 }
 
 .header-actions {
@@ -677,52 +659,19 @@ onMounted(() => {
   gap: 16px;
 }
 
-.search-input {
-  width: 280px;
-}
-
-:deep(.search-input .el-input__wrapper) {
-  border-radius: 20px;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
-}
-
-:deep(.search-input .el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #cbd5e1 inset;
-}
-
-:deep(.search-input .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #409eff inset;
-}
-
-.add-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  box-shadow: 0 4px 6px -1px rgba(64, 158, 255, 0.2);
-  transition: all 0.3s;
-}
-
-.add-btn:hover, .add-btn:focus {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 8px -1px rgba(64, 158, 255, 0.3);
-}
-
-.admin-card {
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background: #fff;
+.modern-search {
+  width: 320px;
 }
 
 .id-badge {
   display: inline-block;
-  padding: 2px 8px;
-  background: #f1f5f9;
-  border-radius: 4px;
-  color: #64748b;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 4px 10px;
+  background: rgba(245, 245, 247, 0.8);
+  border-radius: 6px;
+  color: #86868b;
+  font-family: -apple-system, BlinkMacSystemFont, monospace;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .user-info {
@@ -735,6 +684,7 @@ onMounted(() => {
   color: #fff;
   font-weight: 600;
   font-size: 16px;
+  border: 2px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -747,7 +697,7 @@ onMounted(() => {
 
 .username {
   font-weight: 600;
-  color: #334155;
+  color: #1d1d1f;
   font-size: 14px;
 }
 
@@ -755,21 +705,22 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #475569;
+  color: #86868b;
 }
 
 .empty-text {
-  color: #94a3b8;
+  color: #c7c7cc;
 }
 
 .status-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  height: 24px;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 0 12px;
+  height: 28px;
+  border-radius: 14px;
   border: none;
+  font-weight: 500;
 }
 
 .status-dot {
@@ -779,124 +730,76 @@ onMounted(() => {
 }
 
 .dot-success {
-  background-color: #409eff;
+  background-color: #67c23a;
 }
 
 .dot-danger {
-  background-color: #ef4444;
+  background-color: #ff3b30;
 }
 
 .time-cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  color: #64748b;
-  font-size: 13px;
+  gap: 8px;
+  color: #86868b;
 }
 
 .action-btns {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .action-btn {
   width: 32px;
   height: 32px;
-  padding: 8px;
-  border-radius: 8px;
-  background: #f1f5f9;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(245, 245, 247, 0.5) !important;
+  border: 1px solid rgba(229, 229, 234, 0.5) !important;
   transition: all 0.2s;
+  color: #86868b !important;
+  outline: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.action-btn:focus,
+.action-btn:active,
+.action-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: rgba(245, 245, 247, 0.5) !important;
+  color: #86868b !important;
 }
 
 .action-btn:hover {
-  background: #e2e8f0;
-  transform: scale(1.05);
+  background: #ffffff !important;
+  border-color: #e5e5ea !important;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+  color: #409eff !important;
+  transform: translateY(-2px);
 }
 
 .danger-btn:hover {
-  background: #fee2e2;
-  color: #ef4444;
+  color: #ff3b30 !important;
 }
 
 .pagination-container {
   display: flex;
   justify-content: flex-end;
-  padding: 20px 0 0;
-  border-top: 1px solid #f1f5f9;
-  margin-top: 20px;
+  padding: 24px 0 0;
+  margin-top: 12px;
 }
 
-:deep(.el-table) {
-  --el-table-border-color: #e2e8f0;
-  --el-table-row-hover-bg-color: #f8fafc;
-}
-
-:deep(.el-table th.el-table__cell) {
-  padding: 12px 0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-:deep(.el-table td.el-table__cell) {
-  padding: 16px 0;
-  border-bottom: 1px dashed #e2e8f0;
-}
-
-:deep(.custom-table-row) {
-  transition: all 0.3s ease;
-}
-
-/* 对话框美化 */
 .dialog-desc {
   color: #64748b;
   font-size: 14px;
   margin-bottom: 24px;
   margin-top: -10px;
-}
-
-:deep(.custom-dialog) {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-:deep(.custom-dialog .el-dialog__header) {
-  margin: 0;
-  padding: 24px 24px 16px;
-}
-
-:deep(.custom-dialog .el-dialog__title) {
-  font-weight: 600;
-  font-size: 18px;
-  color: #1e293b;
-}
-
-:deep(.custom-dialog .el-dialog__body) {
-  padding: 0 24px 24px;
-}
-
-:deep(.custom-dialog .el-dialog__footer) {
-  padding: 16px 24px;
-  background-color: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
-}
-
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #cbd5e1 inset;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #409eff inset !important;
-}
-
-:deep(.el-button) {
-  border-radius: 8px;
 }
 </style>

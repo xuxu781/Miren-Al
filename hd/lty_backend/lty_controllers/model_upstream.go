@@ -36,7 +36,7 @@ func CreateModelUpstream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.TimeoutSeconds == 0 {
-		req.TimeoutSeconds = 60
+		req.TimeoutSeconds = 200
 	}
 
 	res, err := lty_config.DB.Exec(query, req.ModelType, req.SeriesID, req.LogicalModel, req.Provider, req.ConnectionURL, req.APIKey, req.ChannelName, req.ResolutionTiers, req.AspectRatios, req.ImageCounts, req.ActivityTag, req.ActivityTagColor, req.SizeParameter, req.MaxReferenceImages, req.ResolutionConfigs, req.TimeoutSeconds, req.Capabilities, req.BillingStrategy, req.ExecutionStrategy, req.IsPrimary, status, now, now)

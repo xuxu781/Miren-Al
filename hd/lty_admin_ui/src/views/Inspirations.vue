@@ -62,8 +62,16 @@
             <span v-else style="color: #999; font-size: 12px;">无图片</span>
           </template>
         </el-table-column>
-        <el-table-column prop="main_category" label="主分类" width="120" />
-        <el-table-column prop="sub_category" label="副分类" width="120" />
+        <el-table-column prop="main_category" label="主分类" width="120">
+          <template #default="{ row }">
+            {{ row.main_category || '推荐' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="sub_category" label="副分类" width="120">
+          <template #default="{ row }">
+            {{ row.sub_category || '--' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="need_reference_image" label="是否需参考图" width="120">
           <template #default="{ row }">
             <el-tag :type="row.need_reference_image ? 'success' : 'info'" size="small">
@@ -117,7 +125,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑提示词' : '添加提示词'" width="500px">
+    <el-dialog append-to-body v-model="dialogVisible" :title="isEdit ? '编辑提示词' : '添加提示词'" width="500px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="示例图片" prop="image_url">
           <el-input v-model="form.image_url" placeholder="请输入图片URL（选填）" clearable />
@@ -456,24 +464,26 @@ onMounted(() => {
 
 <style scoped>
 .inspirations-container {
-  padding: 20px;
+  padding-top: 8px;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .page-header h2 {
   margin: 0;
-  font-size: 20px;
-  color: #303133;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: -0.5px;
 }
 
 .box-card {
-  border-radius: 8px;
+  border-radius: 24px;
 }
 
 .toolbar {
@@ -483,18 +493,19 @@ onMounted(() => {
 .search-bar {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .search-input {
-  width: 300px;
+  width: 240px;
 }
 
 .filter-select {
-  width: 150px;
+  width: 140px;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
 }
@@ -506,7 +517,9 @@ onMounted(() => {
   overflow: hidden;
   white-space: pre-wrap;
   word-break: break-all;
-  line-height: 1.5;
+  line-height: 1.6;
   cursor: pointer;
+  color: #434344;
+  font-size: 14px;
 }
 </style>

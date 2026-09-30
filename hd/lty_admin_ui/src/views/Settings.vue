@@ -61,8 +61,8 @@
                   </el-upload>
                 </div>
                 <div class="form-tip">网站的图标地址，支持外链 URL 或相对路径。也可以直接上传。</div>
-                <div class="logo-preview" v-if="previewLogoUrl || settingsForm.site_logo">
-                  <img :src="previewLogoUrl || formatLogoUrl(settingsForm.site_logo)" alt="Logo Preview" />
+                <div class="logo-preview" v-if="previewLogoUrl || settingsForm.site_logo || true">
+                  <img :src="previewLogoUrl || formatLogoUrl(settingsForm.site_logo) || defaultLogo" alt="Logo Preview" />
                 </div>
               </el-form-item>
 
@@ -227,8 +227,7 @@
       </el-tabs>
     </el-card>
 
-    <el-dialog
-      v-model="logDialogVisible"
+    <el-dialog append-to-body       v-model="logDialogVisible"
       title="自动清理历史图片日志"
       width="600px"
       class="custom-dialog"
@@ -258,6 +257,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Setting, Monitor, Picture, Link, Document, Refresh } from '@element-plus/icons-vue'
+
+import defaultLogo from '../assets/logo/logo.png'
 
 const activeTab = ref('basic_settings')
 const loading = ref(false)
@@ -491,10 +492,20 @@ const handleSaveBasic = async () => {
         await saveSetting('site_description', settingsForm.value.site_description, '网站描述')
         await saveSetting('site_copyright', settingsForm.value.site_copyright, '版权信息')
         
-        // Clear cached local storage to force frontend refresh
-        localStorage.removeItem('site_logo')
-        localStorage.removeItem('admin_site_logo')
-        localStorage.removeItem('admin_site_name')
+        // Update local storage to force frontend refresh
+        localStorage.setItem('site_logo', settingsForm.value.site_logo)
+        localStorage.setItem('admin_site_logo', settingsForm.value.site_logo)
+        localStorage.setItem('admin_site_name', settingsForm.value.site_name)
+        
+        // Dispatch storage event manually to update layout in same window
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'admin_site_logo',
+          newValue: settingsForm.value.site_logo
+        }))
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'admin_site_name',
+          newValue: settingsForm.value.site_name
+        }))
         
         ElMessage.success('基础设置保存成功')
       } catch (error) {
@@ -562,27 +573,25 @@ onMounted(() => {
 }
 
 .settings-container {
-  padding: 24px;
-  background-color: #f1f5f9;
-  min-height: calc(100vh - 60px);
+  padding-top: 8px;
 }
 
 .log-content-container {
   min-height: 200px;
   max-height: 400px;
   overflow-y: auto;
-  background-color: #f8fafc;
+  background-color: rgba(245, 245, 247, 0.8);
   padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 229, 234, 0.5);
 }
 
 .log-item {
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
-  color: #334155;
+  color: #434344;
   padding: 6px 0;
-  border-bottom: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed rgba(229, 229, 234, 0.8);
   line-height: 1.5;
 }
 
@@ -595,10 +604,6 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  background: #fff;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .header-info {
@@ -610,30 +615,34 @@ onMounted(() => {
 .icon-wrapper {
   width: 48px;
   height: 48px;
-  background: #e6f2ff;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(41, 121, 255, 0.05) 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #409eff;
 }
 
 .header-title h2 {
   margin: 0 0 4px 0;
-  font-size: 20px;
-  color: #1e293b;
-  font-weight: 600;
+  font-size: 24px;
+  color: #1d1d1f;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: #86868b;
 }
 
 .settings-card {
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   min-height: 500px;
 }
 
@@ -644,12 +653,13 @@ onMounted(() => {
 .section-title {
   margin: 0 0 8px 0;
   font-size: 18px;
-  color: #334155;
+  color: #1d1d1f;
+  font-weight: 600;
 }
 
 .section-desc {
   margin: 0 0 24px 0;
-  color: #64748b;
+  color: #86868b;
   font-size: 14px;
 }
 
@@ -659,15 +669,15 @@ onMounted(() => {
 
 .form-tip {
   font-size: 12px;
-  color: #94a3b8;
+  color: #86868b;
   margin-top: 4px;
   line-height: 1.4;
 }
 
 .save-btn {
   padding: 10px 32px;
-  border-radius: 8px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-weight: 600;
   margin-top: 12px;
 }
 
@@ -685,13 +695,14 @@ onMounted(() => {
   margin-top: 12px;
   width: 80px;
   height: 80px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 229, 234, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8fafc;
+  background-color: rgba(245, 245, 247, 0.8);
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .logo-preview img {
@@ -702,7 +713,7 @@ onMounted(() => {
 
 :deep(.el-tabs__nav-wrap::after) {
   height: 1px;
-  background-color: #e2e8f0;
+  background-color: rgba(229, 229, 234, 0.5);
 }
 
 :deep(.el-tabs__item) {
@@ -710,19 +721,5 @@ onMounted(() => {
   padding: 0 24px;
   height: 48px;
   line-height: 48px;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
-  padding: 4px 12px;
-}
-
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #cbd5e1 inset;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #409eff inset !important;
 }
 </style>

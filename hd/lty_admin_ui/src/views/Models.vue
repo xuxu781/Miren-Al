@@ -158,7 +158,7 @@
     </el-card>
 
     <!-- 添加上游对话框 -->
-    <el-dialog v-model="showAddDialog" title="添加模型上游" width="600px" destroy-on-close class="custom-dialog">
+    <el-dialog append-to-body v-model="showAddDialog" title="添加模型上游" width="600px" destroy-on-close class="custom-dialog">
       <div class="dialog-desc">填写模型上游的连接和配置信息。</div>
       <el-form ref="addFormRef" :model="addForm" :rules="rules" label-width="auto" size="large" label-position="right">
         <el-form-item label="模型类型" prop="model_type">
@@ -206,7 +206,7 @@
           
           <el-collapse-transition>
             <div v-show="showAddImageConfig">
-              <div v-for="(tier, index) in addForm.resolution_tiers" :key="'add_' + index" style="padding-left: 20px; background: #fafafa; padding-top: 15px; padding-bottom: 5px; border-radius: 8px; margin-bottom: 15px; position: relative;">
+              <div v-for="(tier, index) in addForm.resolution_tiers" :key="'add_' + index" style="padding: 15px 20px 5px 20px; background: rgba(245, 245, 247, 0.6); border: 1px solid rgba(229, 229, 234, 0.5); border-radius: 12px; margin-bottom: 15px; position: relative; box-sizing: border-box;">
             <el-button type="danger" link style="position: absolute; right: 10px; top: 10px; z-index: 1;" @click="handleRemoveResolution(index, 'add')">
               <el-icon><Delete /></el-icon>
             </el-button>
@@ -268,11 +268,11 @@
             </el-form-item>
 
             <el-form-item label="支持张数" :prop="'resolution_configs.' + tier + '.image_counts'">
-              <el-input-number v-model="addForm.resolution_configs[tier].image_counts" :min="1" />
+              <el-input-number v-model="addForm.resolution_configs[tier].image_counts" :min="1" style="width: 100%" />
             </el-form-item>
             
             <el-form-item label="最多参考图" :prop="'resolution_configs.' + tier + '.max_reference_images'">
-              <el-input-number v-model="addForm.resolution_configs[tier].max_reference_images" :min="0" />
+              <el-input-number v-model="addForm.resolution_configs[tier].max_reference_images" :min="0" style="width: 100%" />
             </el-form-item>
               </div>
             </el-collapse-transition>
@@ -298,7 +298,7 @@
 
         <el-divider content-position="left">高级配置</el-divider>
         <el-form-item label="超时时间(秒)" prop="timeout_seconds">
-          <el-input-number v-model="addForm.timeout_seconds" :min="1" :step="10" placeholder="如 60" />
+          <el-input-number v-model="addForm.timeout_seconds" :min="1" :step="10" placeholder="如 200" style="width: 100%" />
         </el-form-item>
         <el-form-item label="计费策略" prop="billing_strategy">
           <el-input v-model="addForm.billing_strategy" placeholder="JSON格式计费策略 (可选)" />
@@ -319,7 +319,7 @@
     </el-dialog>
 
     <!-- 编辑上游对话框 -->
-    <el-dialog v-model="showEditDialog" title="编辑模型上游" width="600px" destroy-on-close class="custom-dialog">
+    <el-dialog append-to-body v-model="showEditDialog" title="编辑模型上游" width="600px" destroy-on-close class="custom-dialog">
       <div class="dialog-desc">修改模型上游配置信息。</div>
       <el-form ref="editFormRef" :model="editForm" :rules="rules" label-width="auto" size="large" label-position="right">
         <el-form-item label="模型类型" prop="model_type">
@@ -367,7 +367,7 @@
           
           <el-collapse-transition>
             <div v-show="showEditImageConfig">
-              <div v-for="(tier, index) in editForm.resolution_tiers" :key="'edit_' + index" style="padding-left: 20px; background: #fafafa; padding-top: 15px; padding-bottom: 5px; border-radius: 8px; margin-bottom: 15px; position: relative;">
+              <div v-for="(tier, index) in editForm.resolution_tiers" :key="'edit_' + index" style="padding: 15px 20px 5px 20px; background: rgba(245, 245, 247, 0.6); border: 1px solid rgba(229, 229, 234, 0.5); border-radius: 12px; margin-bottom: 15px; position: relative; box-sizing: border-box;">
             <el-button type="danger" link style="position: absolute; right: 10px; top: 10px; z-index: 1;" @click="handleRemoveResolution(index, 'edit')">
               <el-icon><Delete /></el-icon>
             </el-button>
@@ -429,11 +429,11 @@
             </el-form-item>
 
             <el-form-item label="支持张数" :prop="'resolution_configs.' + tier + '.image_counts'">
-              <el-input-number v-model="editForm.resolution_configs[tier].image_counts" :min="1" />
+              <el-input-number v-model="editForm.resolution_configs[tier].image_counts" :min="1" style="width: 100%" />
             </el-form-item>
             
             <el-form-item label="最多参考图" :prop="'resolution_configs.' + tier + '.max_reference_images'">
-              <el-input-number v-model="editForm.resolution_configs[tier].max_reference_images" :min="0" />
+              <el-input-number v-model="editForm.resolution_configs[tier].max_reference_images" :min="0" style="width: 100%" />
             </el-form-item>
               </div>
             </el-collapse-transition>
@@ -459,7 +459,7 @@
 
         <el-divider content-position="left">高级配置</el-divider>
         <el-form-item label="超时时间(秒)" prop="timeout_seconds">
-          <el-input-number v-model="editForm.timeout_seconds" :min="1" :step="10" placeholder="如 60" />
+          <el-input-number v-model="editForm.timeout_seconds" :min="1" :step="10" placeholder="如 200" style="width: 100%" />
         </el-form-item>
         <el-form-item label="计费策略" prop="billing_strategy">
           <el-input v-model="editForm.billing_strategy" placeholder="JSON格式计费策略 (可选)" />
@@ -564,7 +564,7 @@ const addForm = ref({
   activity_tag_color: '#10b981',
   size_parameter: 'aspect_ratio',
   max_reference_images: 3,
-  timeout_seconds: 60,
+  timeout_seconds: 200,
   billing_strategy: '',
   is_primary: false,
   status: 'active'
@@ -670,7 +670,7 @@ const editForm = ref({
   activity_tag_color: '#10b981',
   size_parameter: 'aspect_ratio',
   max_reference_images: 3,
-  timeout_seconds: 60,
+  timeout_seconds: 200,
   billing_strategy: '',
   is_primary: false,
   status: 'active'
@@ -815,7 +815,7 @@ const handleAdd = async () => {
         if (res.ok && data.success) {
           ElMessage.success('添加成功')
           showAddDialog.value = false
-          addForm.value = { model_type: 4, series_id: '', logical_model: '', provider: '', channel_name: '', connection_url: '', api_key: '', display_name: '', resolution_tiers: [], resolution_configs: {}, aspect_ratios: 'auto,1:1,4:3,3:4,3:2,2:3,16:9,9:16,21:9,9:21', image_counts: 4, activity_tag: '', activity_tag_color: '#10b981', size_parameter: 'aspect_ratio', max_reference_images: 3, timeout_seconds: 60, billing_strategy: '', is_primary: false, status: 'active' }
+          addForm.value = { model_type: 4, series_id: '', logical_model: '', provider: '', channel_name: '', connection_url: '', api_key: '', display_name: '', resolution_tiers: [], resolution_configs: {}, aspect_ratios: 'auto,1:1,4:3,3:4,3:2,2:3,16:9,9:16,21:9,9:21', image_counts: 4, activity_tag: '', activity_tag_color: '#10b981', size_parameter: 'aspect_ratio', max_reference_images: 3, timeout_seconds: 200, billing_strategy: '', is_primary: false, status: 'active' }
           fetchUpstreamList()
         } else {
           ElMessage.error(data.error || '添加失败')
@@ -862,7 +862,7 @@ const openEditDialog = (row: any) => {
     activity_tag_color: row.activity_tag_color || '#10b981',
     size_parameter: row.size_parameter || 'aspect_ratio',
     max_reference_images: row.max_reference_images || 0,
-    timeout_seconds: row.timeout_seconds || 60,
+    timeout_seconds: row.timeout_seconds || 200,
     billing_strategy: row.billing_strategy,
     is_primary: row.is_primary,
     status: row.status
@@ -970,9 +970,7 @@ onMounted(() => {
 }
 
 .admin-container {
-  padding: 24px;
-  background-color: #f1f5f9;
-  min-height: calc(100vh - 60px);
+  padding-top: 8px;
 }
 
 .page-header {
@@ -980,10 +978,6 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  background: #fff;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .header-info {
@@ -995,23 +989,25 @@ onMounted(() => {
 .icon-wrapper {
   width: 48px;
   height: 48px;
-  background: #e6f2ff;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(41, 121, 255, 0.05) 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #409eff;
 }
 
 .header-title h2 {
   margin: 0 0 4px 0;
-  font-size: 20px;
-  color: #1e293b;
-  font-weight: 600;
+  font-size: 24px;
+  color: #1d1d1f;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: #86868b;
 }
 
 .header-actions {
@@ -1024,38 +1020,14 @@ onMounted(() => {
   width: 280px;
 }
 
-:deep(.search-input .el-input__wrapper) {
-  border-radius: 20px;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
-}
-
-:deep(.search-input .el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #cbd5e1 inset;
-}
-
-:deep(.search-input .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #409eff inset;
-}
-
-.add-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  box-shadow: 0 4px 6px -1px rgba(64, 158, 255, 0.2);
-  transition: all 0.3s;
-}
-
-.add-btn:hover, .add-btn:focus {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 8px -1px rgba(64, 158, 255, 0.3);
-}
-
 .admin-card {
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background: #fff;
-  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 24px !important;
 }
 
 .table-toolbar {
@@ -1065,8 +1037,24 @@ onMounted(() => {
 }
 
 .type-filter-group {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  background: rgba(245, 245, 247, 0.5);
+}
+
+:deep(.type-filter-group .el-radio-button__inner) {
+  border: none !important;
+  background: transparent !important;
+  color: #434344;
+  font-weight: 500;
+  border-radius: 8px !important;
+  margin: 4px;
+}
+
+:deep(.type-filter-group .el-radio-button.is-active .el-radio-button__inner) {
+  background: #ffffff !important;
+  color: #409eff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
 }
 
 .font-bold {
@@ -1074,11 +1062,11 @@ onMounted(() => {
 }
 
 .text-gray-800 {
-  color: #1f2937;
+  color: #1d1d1f;
 }
 
 .text-gray-500 {
-  color: #6b7280;
+  color: #86868b;
 }
 
 .truncate {
@@ -1088,17 +1076,18 @@ onMounted(() => {
 }
 
 .text-sm {
-  font-size: 0.875rem;
+  font-size: 14px;
 }
 
 .status-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  height: 24px;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 0 12px;
+  height: 28px;
+  border-radius: 14px;
   border: none;
+  font-weight: 500;
 }
 
 .status-dot {
@@ -1108,18 +1097,18 @@ onMounted(() => {
 }
 
 .dot-success {
-  background-color: #409eff;
+  background-color: #67c23a;
 }
 
 .dot-danger {
-  background-color: #ef4444;
+  background-color: #ff3b30;
 }
 
 .action-btns {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .action-btn {
@@ -1127,98 +1116,39 @@ onMounted(() => {
   height: 32px;
   padding: 8px;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: rgba(245, 245, 247, 0.5);
+  border: 1px solid rgba(229, 229, 234, 0.5);
   transition: all 0.2s;
+  color: #86868b;
 }
 
 .action-btn:hover {
-  background: #e2e8f0;
-  transform: scale(1.05);
+  background: #ffffff;
+  border-color: #e5e5ea;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  color: #409eff;
+  transform: translateY(-2px);
 }
 
 .danger-btn:hover {
-  background: #fee2e2;
-  color: #ef4444;
+  color: #ff3b30;
 }
 
 .pagination-container {
   display: flex;
   justify-content: flex-end;
-  padding: 20px 0 0;
-  border-top: 1px solid #f1f5f9;
-  margin-top: 20px;
-}
-
-:deep(.el-table) {
-  --el-table-border-color: #e2e8f0;
-  --el-table-row-hover-bg-color: #f8fafc;
-}
-
-:deep(.el-table th.el-table__cell) {
-  padding: 12px 0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-:deep(.el-table td.el-table__cell) {
-  padding: 16px 0;
-  border-bottom: 1px dashed #e2e8f0;
-}
-
-:deep(.custom-table-row) {
-  transition: all 0.3s ease;
+  padding: 24px 0 0;
+  margin-top: 12px;
 }
 
 /* 对话框美化 */
 .dialog-desc {
-  color: #64748b;
+  color: #86868b;
   font-size: 14px;
   margin-bottom: 24px;
   margin-top: -10px;
 }
 
-:deep(.custom-dialog) {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-:deep(.custom-dialog .el-dialog__header) {
-  margin: 0;
-  padding: 24px 24px 16px;
-}
-
-:deep(.custom-dialog .el-dialog__title) {
-  font-weight: 600;
-  font-size: 18px;
-  color: #1e293b;
-}
-
-:deep(.custom-dialog .el-dialog__body) {
-  padding: 0 24px 24px;
-}
-
-:deep(.custom-dialog .el-dialog__footer) {
-  padding: 16px 24px;
-  background-color: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
-}
-
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #cbd5e1 inset;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #409eff inset !important;
-}
-
-:deep(.el-button) {
-  border-radius: 8px;
-}
 .add-config-btn-wrapper {
   text-align: center;
   margin: 20px 0;
@@ -1227,9 +1157,9 @@ onMounted(() => {
 .add-config-btn {
   width: 80%;
   height: 44px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px dashed var(--el-color-primary);
-  background-color: var(--el-color-primary-light-9);
+  background-color: rgba(64, 158, 255, 0.05);
   color: var(--el-color-primary);
   transition: all 0.3s;
 }

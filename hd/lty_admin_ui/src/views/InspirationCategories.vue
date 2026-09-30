@@ -89,7 +89,7 @@
     </el-card>
 
     <!-- 添加/编辑分类弹窗 -->
-    <el-dialog
+    <el-dialog append-to-body 
       v-model="dialogVisible"
       :title="isEditing ? '编辑分类' : '添加主分类'"
       width="500px"
@@ -398,9 +398,7 @@ onBeforeUnmount(() => {
 }
 
 .settings-container {
-  padding: 24px;
-  background-color: #f1f5f9;
-  min-height: calc(100vh - 60px);
+  padding-top: 8px;
 }
 
 .page-header {
@@ -408,10 +406,6 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  background: #fff;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .header-info {
@@ -423,30 +417,34 @@ onBeforeUnmount(() => {
 .icon-wrapper {
   width: 48px;
   height: 48px;
-  background: #e6f2ff;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(41, 121, 255, 0.05) 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #409eff;
 }
 
 .header-title h2 {
   margin: 0 0 4px 0;
-  font-size: 20px;
-  color: #1e293b;
-  font-weight: 600;
+  font-size: 24px;
+  color: #1d1d1f;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: #86868b;
 }
 
 .settings-card {
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   min-height: 500px;
   padding: 0;
 }
@@ -456,10 +454,8 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  padding: 16px 24px;
-  border-bottom: 1px solid #e2e8f0;
-  background-color: #f8fafc;
-  border-radius: 12px 12px 0 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(229, 229, 234, 0.5);
 }
 
 .categories-editor {
@@ -473,16 +469,18 @@ onBeforeUnmount(() => {
 }
 
 .category-item-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
+  border: 1px solid rgba(229, 229, 234, 0.8);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
   transition: all 0.3s ease;
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .category-item-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: rgba(229, 229, 234, 1);
+  transform: translateY(-2px);
 }
 
 .category-header {
@@ -490,7 +488,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background-color: #f8fafc;
+  background-color: rgba(245, 245, 247, 0.5);
 }
 
 .header-left {
@@ -501,7 +499,7 @@ onBeforeUnmount(() => {
 }
 
 .drag-icon {
-  color: #94a3b8;
+  color: #86868b;
   cursor: grab;
   font-size: 18px;
 }
@@ -509,7 +507,7 @@ onBeforeUnmount(() => {
 .category-name-display {
   font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: #1d1d1f;
 }
 
 .header-actions {
@@ -524,7 +522,7 @@ onBeforeUnmount(() => {
 
 .category-divider {
   height: 1px;
-  background-color: #e2e8f0;
+  background-color: rgba(229, 229, 234, 0.5);
 }
 
 .category-body {
@@ -532,8 +530,8 @@ onBeforeUnmount(() => {
 }
 
 .sub-category-title {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 13px;
+  color: #86868b;
   margin-bottom: 12px;
   font-weight: 500;
 }
@@ -547,15 +545,18 @@ onBeforeUnmount(() => {
 }
 
 .sub-tag {
-  border-radius: 6px;
-  padding: 0 10px;
-  height: 28px;
-  line-height: 26px;
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 30px;
+  line-height: 28px;
+  background: rgba(245, 245, 247, 0.8);
+  border: 1px solid rgba(229, 229, 234, 0.8);
+  color: #434344;
 }
 
 .no-sub-text {
   font-size: 13px;
-  color: #94a3b8;
+  color: #86868b;
   font-style: italic;
 }
 
@@ -572,12 +573,12 @@ onBeforeUnmount(() => {
 }
 
 .button-new-tag {
-  border-radius: 6px;
+  border-radius: 8px;
   border-style: dashed;
 }
 
 .save-btn, .add-main-btn {
-  border-radius: 8px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-weight: 600;
 }
 </style>

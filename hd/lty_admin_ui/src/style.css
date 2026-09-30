@@ -10,4 +10,418 @@ html, body, #app {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden; /* 防止任何全局级别的多余滚动条 */
+  background-color: #f5f5f7; /* Apple 背景灰 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==================================================
+   Apple Glassmorphism 规范 (与 Login 页面无缝融合)
+================================================== */
+:root {
+  --el-color-primary: #409eff; /* 经典 Element 蓝 */
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-light-7: #c6e2ff;
+  --el-color-primary-light-8: #d9ecff;
+  --el-color-primary-light-9: #ecf5ff;
+  
+  --el-border-radius-base: 12px;
+  --el-border-radius-small: 8px;
+  --el-border-radius-round: 24px;
+  
+  --el-text-color-primary: #1d1d1f; /* Apple 深黑 */
+  --el-text-color-regular: #434344;
+  --el-text-color-secondary: #86868b; /* Apple 灰 */
+  
+  --el-border-color: #e5e5ea;
+  --el-border-color-light: #f5f5f7;
+  --el-border-color-lighter: #ffffff;
+  
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color: #f5f5f7;
+  --el-fill-color-light: #ffffff;
+  
+  --modern-card-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+/* ================= 组件全局覆盖 ================= */
+
+/* Tooltip (提示框) 覆盖 - Apple 毛玻璃质感 */
+.el-popper.is-dark {
+  background: rgba(29, 29, 31, 0.85) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.el-popper.is-dark .el-popper__arrow::before {
+  background: rgba(29, 29, 31, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 弹窗及其他弹出层 (Dropdown / Select) */
+.el-popper:not(.is-dark) {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.2) inset !important;
+  border-radius: 16px !important;
+}
+
+/* 卡片 - Apple 毛玻璃 */
+.el-card {
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: var(--modern-card-shadow) !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.el-card:hover {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+}
+
+.el-card__header {
+  border-bottom: 1px solid rgba(229, 229, 234, 0.5) !important;
+  padding: 16px 20px !important;
+  font-weight: 600;
+  color: #1d1d1f;
+  font-size: 16px;
+}
+
+.el-card__body {
+  padding: 20px !important;
+}
+
+/* 表格 - 去线化，现代间距 */
+.el-table {
+  --el-table-border-color: transparent;
+  --el-table-header-bg-color: transparent;
+  --el-table-header-text-color: #86868b;
+  border-radius: 12px;
+  background-color: #ffffff !important; /* 给整个表格增加白底，避免滚动穿透 */
+}
+.el-table tr {
+  background-color: #ffffff !important;
+}
+.el-table th.el-table__cell {
+  font-weight: 600 !important;
+  background-color: rgba(245, 245, 247, 0.5) !important;
+  border-bottom: 1px solid rgba(229, 229, 234, 0.5) !important;
+  padding: 12px 8px !important;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.el-table td.el-table__cell {
+  border-bottom: 1px dashed rgba(229, 229, 234, 0.8) !important;
+  padding: 12px 8px !important;
+  font-size: 14px;
+  color: #1d1d1f;
+}
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background-color: rgba(64, 158, 255, 0.04) !important;
+}
+.el-table .cell {
+  padding: 0 8px !important;
+  line-height: 1.5;
+}
+.el-table .el-button + .el-button {
+  margin-left: 8px;
+}
+
+/* 按钮 - 质感与交互动效升级 */
+.el-button {
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  outline: none !important;
+}
+
+.el-button:focus, .el-button:focus-visible {
+  outline: none !important;
+}
+
+.el-button:active {
+  transform: scale(0.96) !important;
+}
+
+/* 修复 link/plain 按钮被强制覆盖背景和阴影的问题 */
+.el-button.is-link, .el-button.is-text {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 8px 12px !important;
+}
+
+/* 主按钮 (Primary) */
+.el-button--primary:not(.is-link):not(.is-text):not(.is-plain) {
+  background: linear-gradient(135deg, #409eff 0%, #2979ff 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3) !important;
+}
+
+.el-button--primary:not(.is-link):not(.is-text):not(.is-plain):hover {
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+.el-button--primary:not(.is-link):not(.is-text):not(.is-plain):active {
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2) !important;
+}
+
+/* 默认按钮 (Default) */
+.el-button--default:not(.is-link):not(.is-text):not(.is-plain) {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(229, 229, 234, 0.8) !important;
+  color: #434344 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02) !important;
+}
+
+.el-button--default:not(.is-link):not(.is-text):not(.is-plain):hover {
+  background: #ffffff !important;
+  border-color: rgba(229, 229, 234, 1) !important;
+  color: #1d1d1f !important;
+}
+
+/* 危险按钮 (Danger) */
+.el-button--danger:not(.is-link):not(.is-text):not(.is-plain) {
+  background: rgba(255, 69, 58, 0.1) !important;
+  border: 1px solid rgba(255, 69, 58, 0.2) !important;
+  color: #ff453a !important;
+}
+
+.el-button--danger:not(.is-link):not(.is-text):not(.is-plain):hover {
+  background: #ff453a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(255, 69, 58, 0.3) !important;
+}
+
+/* 修复 Element Plus 表格固定列(fixed)在透明背景下的穿透问题 */
+.el-table .el-table__fixed-right,
+.el-table .el-table__fixed {
+  background-color: #ffffff !important;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.05);
+}
+
+.el-table .el-table__fixed-right .el-table__fixed-body-wrapper,
+.el-table .el-table__fixed .el-table__fixed-body-wrapper {
+  background-color: #ffffff !important;
+}
+
+.el-table .el-table__fixed-right .el-table__fixed-header-wrapper,
+.el-table .el-table__fixed .el-table__fixed-header-wrapper {
+  background-color: #f8fafc !important;
+}
+
+.el-table .el-table__fixed-right .el-table__fixed-body-wrapper .el-table__row td,
+.el-table .el-table__fixed .el-table__fixed-body-wrapper .el-table__row td,
+.el-table .el-table__cell.is-right-fixed,
+.el-table .el-table__cell.is-left-fixed {
+  background-color: #ffffff !important; 
+}
+
+/* 保证固定列表头颜色正确 */
+.el-table .el-table__fixed-right .el-table__fixed-header-wrapper th,
+.el-table .el-table__fixed .el-table__fixed-header-wrapper th,
+.el-table th.el-table__cell.is-right-fixed,
+.el-table th.el-table__cell.is-left-fixed {
+  background-color: #f8fafc !important; 
+}
+
+/* 如果是深色模式下，鼠标 hover 到固定列时的背景色 */
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell.is-right-fixed,
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell.is-left-fixed {
+  background-color: #f5f7fa !important;
+}
+
+/* 输入框 & 选择框 - 统一内阴影风格 */
+.el-input__wrapper, .el-select__wrapper, .el-textarea__inner {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(229, 229, 234, 0.8) inset !important;
+  border-radius: 12px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-input__wrapper:hover, .el-select__wrapper:hover, .el-textarea__inner:hover {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(209, 209, 214, 1) inset !important;
+}
+
+.el-input__wrapper.is-focus, .el-select__wrapper.is-focused, .el-textarea__inner:focus {
+  background-color: #fff !important;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.15), 0 0 0 1px #409eff inset !important;
+}
+
+.el-input__inner {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+/* 数字输入框的加减按钮 - Apple风格优化 */
+.el-input-number__decrease, .el-input-number__increase {
+  background-color: transparent !important;
+  border: none !important;
+  color: #86868b !important;
+  transition: all 0.2s ease !important;
+  border-radius: 8px !important;
+  height: calc(100% - 8px) !important;
+  margin: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.el-input-number__decrease:hover, .el-input-number__increase:hover {
+  background-color: rgba(64, 158, 255, 0.1) !important;
+  color: #409eff !important;
+}
+.el-input-number__decrease:active, .el-input-number__increase:active {
+  background-color: rgba(64, 158, 255, 0.2) !important;
+  transform: scale(0.95);
+}
+
+/* 表单 Label */
+.el-form-item__label {
+  font-weight: 500 !important;
+  color: #434344 !important;
+}
+
+/* 弹窗及其他弹出层 (Dropdown / Select / DatePicker) */
+.el-select-dropdown__item, .el-dropdown-menu__item {
+  border-radius: 8px !important;
+  margin: 4px 8px !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+
+.el-select-dropdown__item.hover, .el-dropdown-menu__item:hover {
+  background-color: rgba(64, 158, 255, 0.1) !important;
+  color: #409eff !important;
+}
+
+/* 弹窗 (Dialog) 和 抽屉 (Drawer) - Apple 质感与动效 */
+.el-dialog, .el-drawer {
+  border-radius: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.2) inset !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.el-drawer {
+  border-radius: 24px 0 0 24px !important;
+}
+.el-dialog__header, .el-drawer__header {
+  padding: 24px 24px 16px !important;
+  margin-right: 0 !important;
+  border-bottom: 1px solid rgba(229, 229, 234, 0.5);
+  margin-bottom: 0 !important;
+}
+.el-dialog__title, .el-drawer__title {
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  color: #1d1d1f !important;
+  letter-spacing: -0.4px;
+}
+.el-dialog__footer, .el-drawer__footer {
+  padding: 16px 24px 24px !important;
+  border-top: none !important;
+}
+/* 弹窗及抽屉关闭按钮 */
+.el-dialog__headerbtn, .el-drawer__headerbtn {
+  top: 24px !important;
+  right: 24px !important;
+  width: 32px !important;
+  height: 32px !important;
+  background: rgba(245, 245, 247, 0.8) !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  outline: none !important;
+}
+.el-dialog__headerbtn .el-icon, .el-drawer__headerbtn .el-icon {
+  font-size: 16px !important;
+  color: #86868b !important;
+  transition: color 0.2s ease !important;
+}
+.el-dialog__headerbtn:hover, .el-drawer__headerbtn:hover {
+  background: rgba(229, 229, 234, 1) !important;
+  transform: scale(1.05);
+}
+.el-dialog__headerbtn:hover .el-icon, .el-drawer__headerbtn:hover .el-icon {
+  color: #1d1d1f !important;
+}
+
+/* 修复 divider 在半透明弹窗中背景发白问题 */
+.el-dialog .el-divider__text {
+  background-color: transparent !important;
+}
+
+/* 标签 Tag */
+.el-tag {
+  border-radius: 8px !important;
+  border: none !important;
+  font-weight: 500;
+}
+
+/* 分页 (Pagination) */
+.el-pagination {
+  justify-content: flex-end;
+  padding: 16px 0 !important;
+}
+.el-pagination.is-background .btn-next, 
+.el-pagination.is-background .btn-prev, 
+.el-pagination.is-background .el-pager li {
+  background-color: rgba(245, 245, 247, 0.8) !important;
+  border-radius: 8px !important;
+  color: #434344 !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+.el-pagination.is-background .el-pager li:not(.is-disabled):hover {
+  color: #409eff !important;
+  background-color: rgba(64, 158, 255, 0.1) !important;
+}
+.el-pagination.is-background .el-pager li.is-active {
+  background-color: #409eff !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3) !important;
+}
+
+/* 全局自定义滚动条 (Mac 风格) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(134, 134, 139, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(134, 134, 139, 0.6);
 }

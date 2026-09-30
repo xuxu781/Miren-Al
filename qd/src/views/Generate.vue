@@ -2443,7 +2443,20 @@ const chatList = computed(() => {
   const currentTempTasks = activeSessionId.value ? (tempTasksMap.value[activeSessionId.value] || []) : []
   const taskIds = new Set(taskList.value.map(t => t.id))
   const uniqueTempTasks = currentTempTasks.filter(t => !taskIds.has(t.id))
-  return [...taskList.value, ...uniqueTempTasks].filter(t => !deletedTaskIds.value.has(t.id))
+  const combined = [...taskList.value, ...uniqueTempTasks].filter(t => !deletedTaskIds.value.has(t.id))
+  
+  // 确保最终显示的列表也是按时间升序排序的
+  return combined.sort((a: any, b: any) => {
+    const timeA = new Date(a.created_at).getTime()
+    const timeB = new Date(b.created_at).getTime()
+    if (timeA === timeB) {
+      if (typeof a.id === 'number' && typeof b.id === 'number') {
+        return a.id - b.id
+      }
+      return String(a.id).localeCompare(String(b.id))
+    }
+    return timeA - timeB
+  })
 })
 
 const form = reactive({
@@ -3317,6 +3330,18 @@ const fetchTasksBySession = async (sessionId: string, loadMore = false, silent =
             }
           })
           if (hasNew) {
+            // 重新排序，保证按时间升序
+            taskList.value.sort((a: any, b: any) => {
+              const timeA = new Date(a.created_at).getTime()
+              const timeB = new Date(b.created_at).getTime()
+              if (timeA === timeB) {
+                if (typeof a.id === 'number' && typeof b.id === 'number') {
+                  return a.id - b.id
+                }
+                return String(a.id).localeCompare(String(b.id))
+              }
+              return timeA - timeB
+            })
             // 给渲染一点时间再滚动
             setTimeout(() => {
               scrollToBottom()
@@ -3607,7 +3632,10 @@ const handleTaskCommand = async (command: string, task: any) => {
   }
 }
 
+const isSubmitting = ref(false)
+
 const handleGenerate = async () => {
+  if (isSubmitting.value) return
   if (!isLoggedIn.value) {
     authStore.openLogin()
     return
@@ -3622,6 +3650,8 @@ const handleGenerate = async () => {
     return
   }
 
+  isSubmitting.value = true
+  
   isNewTaskMode.value = false
   
   let finalReferenceImages = [...form.reference_image]
@@ -3638,10 +3668,12 @@ const handleGenerate = async () => {
           finalReferenceImages[i] = res.data.data.url
         } else {
           ElMessage.error(res.data.message || '上传参考图失败')
+          isSubmitting.value = false
           return
         }
       } catch (e) {
         ElMessage.error('上传参考图失败')
+        isSubmitting.value = false
         return
       }
     }
@@ -3797,6 +3829,7 @@ const handleGenerate = async () => {
     if (activeSessionId.value === currentSessionId) {
       scrollToBottom(true)
     }
+    isSubmitting.value = false
   }
 }
 
