@@ -1,6 +1,6 @@
 <template>
   <div class="admin-container fade-in">
-    <div class="page-header">
+    <div class="page-header page-header-modern">
       <div class="header-info">
         <div class="icon-wrapper">
           <el-icon :size="24" color="#409eff"><Cpu /></el-icon>
@@ -16,7 +16,7 @@
           placeholder="搜索上游模型 ID 或提供商..."
           :prefix-icon="Search"
           clearable
-          class="search-input"
+          class="search-input modern-search"
         />
         <el-button type="primary" class="add-btn" @click="showAddDialog = true">
           <el-icon class="el-icon--left"><Plus /></el-icon>
@@ -100,7 +100,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="操作" min-width="140" align="center" fixed="right">
           <template #default="scope">
             <div class="action-btns">
               <el-tooltip content="设为主用" placement="top" v-if="!scope.row.is_primary">
@@ -1180,5 +1180,36 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .table-toolbar {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .type-filter-group {
+    display: flex;
+    white-space: nowrap;
+  }
+  
+  /* 表单标签在移动端居左并在输入框上方 */
+  :deep(.el-form-item) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  :deep(.el-form-item__label) {
+    width: 100% !important;
+    justify-content: flex-start;
+    text-align: left;
+    margin-bottom: 4px;
+  }
+  
+  :deep(.el-form-item__content) {
+    width: 100% !important;
+  }
 }
 </style>

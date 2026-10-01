@@ -722,4 +722,32 @@ onMounted(() => {
   height: 48px;
   line-height: 48px;
 }
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 768px) {
+  .tab-content {
+    padding: 12px 8px;
+  }
+  
+  .logo-upload-wrapper {
+    flex-direction: column;
+  }
+  
+  .logo-uploader .el-button {
+    width: 100%;
+  }
+  
+  .settings-form {
+    width: 100%;
+  }
+  
+  .save-btn {
+    width: 100%;
+  }
+  
+  :deep(.el-form-item__label) {
+    line-height: 24px;
+    padding-bottom: 4px;
+  }
+}
 </style>

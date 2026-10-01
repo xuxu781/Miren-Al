@@ -101,12 +101,21 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="260" align="center" fixed="right">
+        <el-table-column label="操作" min-width="180" align="center" fixed="right">
           <template #default="scope">
             <div class="action-btns">
               <el-tooltip content="积分记录" placement="top" :hide-after="0">
                 <el-button link @click="openPointsRecordDialog(scope.row)" class="action-btn">
                   <el-icon :size="16"><List /></el-icon>
+                </el-button>
+              </el-tooltip>
+
+              <el-tooltip :content="scope.row.status === 1 ? '封禁用户' : '解封用户'" placement="top" :hide-after="0">
+                <el-button link @click="confirmToggleStatus(scope.row)" class="action-btn" :class="{'danger-btn': scope.row.status === 1, 'success-btn': scope.row.status !== 1}">
+                  <el-icon :size="16">
+                    <Lock v-if="scope.row.status === 1" />
+                    <Unlock v-else />
+                  </el-icon>
                 </el-button>
               </el-tooltip>
 
@@ -117,23 +126,9 @@
               </el-tooltip>
               
               <el-tooltip content="删除用户" placement="top" :hide-after="0">
-                <div style="display: inline-block;">
-                  <el-popconfirm 
-                    title="确定要删除该用户吗？此操作不可恢复！" 
-                    confirm-button-text="确定删除"
-                    cancel-button-text="取消"
-                    confirm-button-type="danger"
-                    :icon="Warning"
-                    icon-color="#f56c6c"
-                    @confirm="handleDelete(scope.row)"
-                  >
-                    <template #reference>
-                      <el-button link class="action-btn danger-btn">
-                        <el-icon :size="16"><Delete /></el-icon>
-                      </el-button>
-                    </template>
-                  </el-popconfirm>
-                </div>
+                <el-button link @click="confirmDelete(scope.row)" class="action-btn danger-btn">
+                  <el-icon :size="16"><Delete /></el-icon>
+                </el-button>
               </el-tooltip>
             </div>
           </template>
@@ -296,8 +291,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, EditPen, Delete, Calendar, User, Search, Message, Phone, Warning, Coin, List } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, EditPen, Delete, Calendar, User, Search, Message, Phone, Warning, Coin, List, Lock, Unlock } from '@element-plus/icons-vue'
 
 const userList = ref<any[]>([])
 const loading = ref(false)
@@ -578,6 +573,21 @@ const handleEdit = async () => {
   })
 }
 
+const confirmDelete = (row: any) => {
+  const displayName = row.username || row.email || `ID: ${row.id}`
+  const message = `确定要删除用户 <strong style="color: #f56c6c; font-size: 16px;">${displayName}</strong> 吗？<br><span style="font-size:13px;color:#909399;margin-top:8px;display:inline-block;">此操作不可恢复，该用户的所有数据将被清除。</span>`
+  
+  ElMessageBox.confirm(message, '删除用户确认', {
+    confirmButtonText: '确定删除',
+    cancelButtonText: '取消',
+    type: 'error',
+    dangerouslyUseHTMLString: true,
+    confirmButtonClass: 'el-button--danger',
+  }).then(() => {
+    handleDelete(row)
+  }).catch(() => {})
+}
+
 const handleDelete = async (row: any) => {
   try {
     const res = await fetch(`${(window as any).APP_CONFIG?.API_BASE_URL || ''}/api/admin/users/delete`, {
@@ -591,6 +601,48 @@ const handleDelete = async (row: any) => {
       fetchUserList()
     } else {
       ElMessage.error(data.error || '删除失败')
+    }
+  } catch (error) {
+    ElMessage.error('网络错误，请稍后重试')
+  }
+}
+
+const confirmToggleStatus = (row: any) => {
+  const isBan = row.status === 1
+  const actionText = isBan ? '封禁' : '解封'
+  const type = isBan ? 'warning' : 'success'
+  const title = isBan ? '封禁用户确认' : '解封用户确认'
+  const displayName = row.username || row.email || `ID: ${row.id}`
+  const message = isBan 
+    ? `确定要封禁用户 <strong style="color: #f56c6c; font-size: 16px;">${displayName}</strong> 吗？<br><span style="font-size:13px;color:#909399;margin-top:8px;display:inline-block;">封禁后，该用户将立即失去所有访问权限。</span>`
+    : `确定要解封用户 <strong style="color: #67c23a; font-size: 16px;">${displayName}</strong> 吗？<br><span style="font-size:13px;color:#909399;margin-top:8px;display:inline-block;">解封后，该用户将恢复正常使用。</span>`
+
+  ElMessageBox.confirm(message, title, {
+    confirmButtonText: `确定${actionText}`,
+    cancelButtonText: '取消',
+    type: type,
+    dangerouslyUseHTMLString: true,
+    confirmButtonClass: isBan ? 'el-button--danger' : 'el-button--success',
+  }).then(() => {
+    handleToggleStatus(row)
+  }).catch(() => {})
+}
+
+const handleToggleStatus = async (row: any) => {
+  try {
+    const newStatus = row.status === 1 ? 0 : 1;
+    const actionName = newStatus === 1 ? '解封' : '封禁';
+    const res = await fetch(`${(window as any).APP_CONFIG?.API_BASE_URL || ''}/api/admin/users/status`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ id: row.id, status: newStatus })
+    })
+    const data = await res.json()
+    if (res.ok) {
+      ElMessage.success(`${actionName}成功`)
+      fetchUserList()
+    } else {
+      ElMessage.error(data.error || `${actionName}失败`)
     }
   } catch (error) {
     ElMessage.error('网络错误，请稍后重试')
@@ -787,6 +839,10 @@ onMounted(() => {
 
 .danger-btn:hover {
   color: #ff3b30 !important;
+}
+
+.success-btn:hover {
+  color: #67c23a !important;
 }
 
 .pagination-container {

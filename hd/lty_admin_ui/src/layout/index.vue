@@ -1,18 +1,23 @@
 <template>
-  <div class="pro-layout" :class="{ 'sidebar-collapsed': isCollapse }">
+  <div class="pro-layout" :class="{ 'sidebar-collapsed': isCollapse, 'is-mobile': isMobile, 'mobile-menu-open': mobileMenuOpen }">
+    <!-- 移动端菜单遮罩 -->
+    <transition name="fade">
+      <div v-if="isMobile && mobileMenuOpen" class="mobile-backdrop" @click="mobileMenuOpen = false"></div>
+    </transition>
+
     <!-- 侧边栏 (玻璃拟态 + 悬浮感) -->
-    <aside class="pro-sidebar">
+    <aside class="pro-sidebar" :class="{ 'is-mobile-sidebar': isMobile }">
       <div class="pro-logo">
         <img v-if="siteLogo" :src="siteLogo" class="logo-img" alt="logo" />
         <transition name="fade">
-          <h1 v-show="!isCollapse" class="logo-text">{{ siteName }}</h1>
+          <h1 v-show="!isCollapse || isMobile" class="logo-text">{{ siteName }}</h1>
         </transition>
       </div>
       <el-scrollbar>
         <el-menu
           :default-active="$route.path"
           class="pro-menu"
-          :collapse="isCollapse"
+          :collapse="isCollapse && !isMobile"
           :collapse-transition="false"
           router
         >
@@ -74,12 +79,22 @@
       <header class="pro-header">
         <div class="header-left">
           <div class="collapse-trigger" @click="toggleCollapse">
-            <el-icon :size="20"><Fold v-if="!isCollapse"/><Expand v-else/></el-icon>
+            <el-icon :size="20">
+              <template v-if="isMobile">
+                <Fold v-if="!mobileMenuOpen"/><Expand v-else/>
+              </template>
+              <template v-else>
+                <Fold v-if="!isCollapse"/><Expand v-else/>
+              </template>
+            </el-icon>
           </div>
-          <el-breadcrumb separator="/" class="pro-breadcrumb">
+          <el-breadcrumb separator="/" class="pro-breadcrumb" v-if="!isMobile">
             <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item>{{ currentRouteName }}</el-breadcrumb-item>
           </el-breadcrumb>
+          <div class="mobile-page-title" v-else>
+            {{ currentRouteName }}
+          </div>
         </div>
 
         <div class="header-right">
@@ -131,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { 
   DataLine, User, Setting, Picture, Document,
@@ -143,9 +158,18 @@ import defaultAvatar from '../assets/logo/logo.png'
 const router = useRouter()
 const route = useRoute()
 const isCollapse = ref(false)
+const isMobile = ref(false)
+const mobileMenuOpen = ref(false)
 
 const siteLogo = ref(localStorage.getItem('admin_site_logo') || defaultLogo)
 const siteName = ref(localStorage.getItem('admin_site_name') || 'Miren Al后台管理')
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+  if (!isMobile.value) {
+    mobileMenuOpen.value = false
+  }
+}
 
 const handleStorageChange = (e: StorageEvent) => {
   if (e.key === 'admin_site_logo') {
@@ -157,15 +181,28 @@ const handleStorageChange = (e: StorageEvent) => {
 }
 
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
   window.addEventListener('storage', handleStorageChange)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
   window.removeEventListener('storage', handleStorageChange)
 })
 
+watch(route, () => {
+  if (isMobile.value && mobileMenuOpen.value) {
+    mobileMenuOpen.value = false
+  }
+})
+
 const toggleCollapse = () => {
-  isCollapse.value = !isCollapse.value
+  if (isMobile.value) {
+    mobileMenuOpen.value = !mobileMenuOpen.value
+  } else {
+    isCollapse.value = !isCollapse.value
+  }
 }
 
 const currentRouteName = computed(() => {
@@ -588,5 +625,63 @@ const handleLogout = () => {
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateY(-10px) scale(0.99);
+}
+
+/* ================= 移动端响应式 ================= */
+.mobile-page-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-left: 8px;
+}
+
+@media (max-width: 768px) {
+  .pro-sidebar.is-mobile-sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    margin: 0;
+    height: 100vh;
+    border-radius: 0;
+    width: 260px;
+    border-right: 1px solid rgba(226, 232, 240, 0.6);
+  }
+
+  .pro-layout.mobile-menu-open .pro-sidebar.is-mobile-sidebar {
+    transform: translateX(280px);
+  }
+
+  .mobile-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+
+  .pro-header {
+    padding: 0 16px;
+  }
+
+  .pro-content {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .header-right {
+    gap: 8px;
+  }
+  
+  .user-info .name {
+    display: none;
+  }
+  
+  .user-dropdown {
+    padding: 0 8px;
+  }
 }
 </style>

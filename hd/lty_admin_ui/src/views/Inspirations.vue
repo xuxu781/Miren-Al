@@ -96,17 +96,26 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" min-width="120" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-popconfirm
-              title="确定删除此提示词吗？"
-              @confirm="handleDelete(row.id)"
-            >
-              <template #reference>
-                <el-button link type="danger" size="small">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="action-btns">
+              <el-tooltip content="编辑" placement="top" :hide-after="0">
+                <el-button link @click="handleEdit(row)" class="action-btn">
+                  <el-icon :size="16"><EditPen /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="删除" placement="top" :hide-after="0">
+                <div style="display: inline-block;">
+                  <el-popconfirm title="确定删除此提示词吗？" @confirm="handleDelete(row.id)">
+                    <template #reference>
+                      <el-button link class="action-btn danger-btn">
+                        <el-icon :size="16"><Delete /></el-icon>
+                      </el-button>
+                    </template>
+                  </el-popconfirm>
+                </div>
+              </el-tooltip>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -174,7 +183,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { Plus, Search, EditPen, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import dayjs from 'dayjs'
@@ -521,5 +530,80 @@ onMounted(() => {
   cursor: pointer;
   color: #434344;
   font-size: 14px;
+}
+
+.action-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(245, 245, 247, 0.5) !important;
+  border: 1px solid rgba(229, 229, 234, 0.5) !important;
+  transition: all 0.2s;
+  color: #86868b !important;
+  outline: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.action-btn:focus,
+.action-btn:active,
+.action-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: rgba(245, 245, 247, 0.5) !important;
+  color: #86868b !important;
+}
+
+.action-btn:hover {
+  background: #ffffff !important;
+  border-color: #e5e5ea !important;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+  color: #409eff !important;
+  transform: translateY(-2px);
+}
+
+.danger-btn:hover {
+  color: #ff3b30 !important;
+}
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .page-header .el-button {
+    width: 100%;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-input, .filter-select {
+    width: 100% !important;
+  }
+  
+  .search-bar .el-button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .pagination-container {
+    justify-content: center;
+  }
 }
 </style>

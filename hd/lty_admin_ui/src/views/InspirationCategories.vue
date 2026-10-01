@@ -38,8 +38,8 @@
                   <el-icon class="drag-icon"><Grid /></el-icon>
                   <span class="category-name-display">{{ cat.name }}</span>
                 </div>
-                <div class="header-actions">
-                  <el-button type="primary" link @click="openEditDialog(index)" class="edit-btn">
+                <div class="header-actions" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  <el-button type="primary" link @click="openEditDialog(index)" class="edit-btn" style="margin-left: 0;">
                     <el-icon><Edit /></el-icon> 编辑
                   </el-button>
                   <el-popconfirm
@@ -48,7 +48,7 @@
                     width="200"
                   >
                     <template #reference>
-                      <el-button type="danger" link class="delete-btn">
+                      <el-button type="danger" link class="delete-btn" style="margin-left: 0;">
                         <el-icon><Delete /></el-icon> 删除
                       </el-button>
                     </template>
@@ -580,5 +580,37 @@ onBeforeUnmount(() => {
 .save-btn, .add-main-btn {
   border-radius: 12px;
   font-weight: 600;
+}
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .card-header-actions {
+    justify-content: flex-start;
+  }
+  
+  .add-main-btn {
+    width: 100%;
+  }
+
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>
