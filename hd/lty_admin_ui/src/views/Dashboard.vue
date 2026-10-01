@@ -2,7 +2,7 @@
   <div class="dashboard-container">
     <!-- 数据概览 -->
     <el-row :gutter="24" class="mb-6">
-      <el-col :span="6" v-for="(stat, index) in statistics" :key="index">
+      <el-col :xs="24" :sm="12" :md="6" v-for="(stat, index) in statistics" :key="index" class="mb-4-mobile">
         <el-card class="modern-stat-card">
           <div class="stat-content">
             <div class="stat-info">
@@ -19,7 +19,7 @@
 
     <el-row :gutter="24">
       <!-- 快捷操作 -->
-      <el-col :span="16">
+      <el-col :xs="24" :sm="24" :md="16" class="mb-4-mobile">
         <el-card class="modern-box-card">
           <template #header>
             <div class="card-header">
@@ -44,7 +44,7 @@
       </el-col>
 
       <!-- 最近动态 -->
-      <el-col :span="8">
+      <el-col :xs="24" :sm="24" :md="8">
         <el-card class="modern-box-card">
           <template #header>
             <div class="card-header">
@@ -304,5 +304,37 @@ const activities = [
   color: #86868b;
   font-size: 13px;
   margin-top: 6px;
+}
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 768px) {
+  .mb-4-mobile {
+    margin-bottom: 16px;
+  }
+  
+  .welcome-section {
+    flex-direction: column-reverse;
+    text-align: center;
+    padding: 12px 0;
+  }
+  
+  .welcome-text p {
+    margin: 0 auto 24px auto;
+  }
+  
+  .action-buttons {
+    justify-content: center;
+  }
+  
+  .welcome-img-wrapper {
+    margin-bottom: 24px;
+    width: 160px;
+    height: 160px;
+  }
+  
+  .welcome-img {
+    width: 100px;
+    height: 100px;
+  }
 }
 </style>

@@ -15,6 +15,7 @@ html, body, #app {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent; /* 移除移动端点击元素时默认的蓝色半透明遮罩 */
 }
 
 /* ==================================================
@@ -424,4 +425,165 @@ html, body, #app {
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(134, 134, 139, 0.6);
+}
+
+/* ================= 移动端全局响应式 ================= */
+@media (max-width: 768px) {
+  .page-header-modern {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+  
+  .header-actions {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .modern-search {
+    width: 100% !important;
+  }
+
+  .add-btn, .header-actions .el-button {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-top: 8px !important;
+  }
+  
+  .header-actions .el-button + .el-button {
+    margin-top: 8px !important;
+  }
+
+  .pagination-container {
+    justify-content: center !important;
+  }
+  
+  .el-card__body {
+    padding: 12px !important;
+  }
+  
+  /* 移动端弹窗撑满 */
+  .el-dialog, .custom-dialog {
+    width: 90% !important;
+  }
+  
+  /* 解决移动端表格固定列(fixed)遮挡底层数据的问题，取消移动端的列固定 */
+  .el-table .el-table-fixed-column--right,
+  .el-table .el-table-fixed-column--left,
+  .el-table .is-right-fixed,
+  .el-table .is-left-fixed {
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  /* 移动端优化：缩小操作列按钮尺寸，并允许换行显示，避免过宽 */
+  .action-btns {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .action-btn {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+  }
+  
+  .action-btn .el-icon {
+    font-size: 14px !important;
+  }
+
+  /* 解决手机端点击后 Tooltip 提示框残留（幽灵浮标）的问题 */
+  .el-popper.is-dark {
+    display: none !important;
+  }
+  
+  /* 解决手机端弹窗（Dialog）宽度过大的问题 */
+  .el-dialog {
+    width: 95% !important;
+    margin: 0 auto !important;
+  }
+
+  /* 解决任务详情中描述列表（Descriptions）在手机端显示拥挤的问题，同时美化样式 */
+  .el-descriptions {
+    background: transparent !important;
+  }
+  .el-descriptions__body {
+    background: transparent !important;
+  }
+  .el-descriptions__body .el-descriptions__table {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    background: #fff;
+    border: none !important;
+  }
+  .el-descriptions__body .el-descriptions__table tbody tr {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #f0f0f2;
+  }
+  .el-descriptions__body .el-descriptions__table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .el-descriptions__body .el-descriptions__table tbody tr td {
+    display: flex;
+    width: 100% !important;
+    padding: 12px 16px !important;
+    border: none !important;
+    align-items: center;
+  }
+  .el-descriptions-item__label.is-bordered-label {
+    width: 90px !important;
+    flex-shrink: 0;
+    background: transparent !important;
+    color: #86868b;
+    font-weight: normal;
+    border: none !important;
+    padding: 0 !important;
+  }
+  .el-descriptions-item__content {
+    flex: 1;
+    word-break: break-all;
+    color: #1d1d1f;
+    font-weight: 500;
+    text-align: right;
+    justify-content: flex-end;
+    padding: 0 !important;
+    border: none !important;
+  }
+  
+  /* 美化抽屉整体背景和头部 */
+  .el-drawer {
+    width: 100% !important;
+    background-color: #f5f5f7 !important;
+  }
+  .el-drawer__header {
+    margin-bottom: 0 !important;
+    padding: 16px !important;
+    background: #fff;
+    border-bottom: 1px solid #e5e5ea;
+    font-weight: bold;
+    color: #1d1d1f;
+  }
+  .el-drawer__body {
+    padding: 16px !important;
+  }
+
+  /* 解决手机端点击按钮后，按钮一直保持高亮(hover)状态的问题 */
+  .action-btn:hover {
+    background: rgba(245, 245, 247, 0.5) !important;
+    border-color: rgba(229, 229, 234, 0.5) !important;
+    box-shadow: none !important;
+    color: #86868b !important;
+    transform: none !important;
+  }
+  
+  .action-btn.danger-btn:hover {
+    color: #ff3b30 !important;
+  }
+  
+  .action-btn.success-btn:hover {
+    color: #67c23a !important;
+  }
 }

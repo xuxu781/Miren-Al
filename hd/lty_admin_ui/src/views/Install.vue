@@ -31,14 +31,14 @@
         <transition name="slide-fade" mode="out-in">
           <div v-if="activeStep === 0" key="step0" class="form-step">
             <el-row :gutter="16">
-              <el-col :span="16">
+              <el-col :xs="24" :sm="16">
                 <el-form-item label="数据库地址" prop="db_host">
                   <el-input v-model="form.db_host" placeholder="例如: 127.0.0.1">
                     <template #prefix><el-icon><Platform /></el-icon></template>
                   </el-input>
                 </el-form-item>
               </el-col>
-              <el-col :span="8">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="端口" prop="db_port">
                   <el-input v-model="form.db_port" placeholder="3306" />
                 </el-form-item>

@@ -70,7 +70,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="200" align="center" fixed="right">
+        <el-table-column label="操作" min-width="120" align="center" fixed="right">
           <template #default="scope">
             <div class="action-btns">
               <el-tooltip content="修改密码" placement="top">
@@ -518,5 +518,33 @@ onMounted(() => {
   font-size: 14px;
   margin-bottom: 24px;
   margin-top: -10px;
+}
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 768px) {
+  .page-header-modern {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modern-search {
+    width: 100%;
+  }
+
+  .add-btn {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .pagination-container {
+    justify-content: center;
+  }
 }
 </style>

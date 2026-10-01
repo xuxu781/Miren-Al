@@ -168,7 +168,7 @@
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center" fixed="right">
+        <el-table-column label="操作" min-width="120" align="center" fixed="right">
           <template #default="scope">
             <el-button
               link
@@ -1081,5 +1081,56 @@ onUnmounted(() => {
   color: #86868b;
   font-size: 13px;
   font-style: italic;
+}
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 768px) {
+  .search-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .search-form .el-form-item {
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  
+  .search-form .el-input, .search-form .el-select {
+    width: 100% !important;
+  }
+  
+  .search-form .el-form-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .search-form .el-form-item:last-child .el-button {
+    flex: 1;
+  }
+  
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .table-actions {
+    align-self: flex-end;
+  }
+  
+  .pagination-container {
+    justify-content: center;
+  }
+  
+  :deep(.el-drawer) {
+    width: 100% !important;
+  }
+  
+  .images-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+  
+  :deep(.details-desc .el-descriptions__label) {
+    width: 80px;
+  }
 }
 </style>

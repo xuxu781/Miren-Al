@@ -331,6 +331,38 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// UpdateUserStatus 快速更新用户状态（封禁/解封）
+func UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var req struct {
+		ID     uint `json:"id"`
+		Status int  `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "参数错误"})
+		return
+	}
+
+	if req.ID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "ID不能为空"})
+		return
+	}
+
+	query := "UPDATE lty_users SET status = ? WHERE id = ?"
+	if _, err := lty_config.DB.Exec(query, req.Status, req.ID); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "更新状态失败"})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "用户状态更新成功",
+	})
+}
+
 // DeleteUser 删除用户
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

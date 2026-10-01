@@ -3924,6 +3924,10 @@ const getErrorMessage = (logContent?: string, status?: number) => {
     return status === 3 ? '部分图片生成超时' : '生成超时，请检查网络或稍后重试'
   }
   
+  if (safeText.includes('禁用') || safeText.includes('封禁') || safeText.includes('forbidden') || safeText.includes('403')) {
+    return '您的账号已被封禁，无法继续生成，请联系客服'
+  }
+  
   // 兜底提示，避免暴露内部报错详情
   return status === 3 ? '部分图片生成失败' : '生成失败，请稍后重试'
 }

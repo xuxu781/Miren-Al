@@ -65,13 +65,13 @@ request.interceptors.response.use(
       if (status === 401 || status === 403) {
         // 清除本地信息 (保存下token用于判断是否需要显示提示)
         const oldToken = localStorage.getItem('token')
-        localStorage.removeItem('token')
-        localStorage.removeItem('userInfo')
+        const authStore = useAuthStore()
+        authStore.logout()
         
         // 提示用户
         const errMsg = error.response.data?.error || error.response.data?.message || ''
         if (status === 403) {
-          showErrorMsg(errMsg || '您的账号已被封禁/禁用，请联系管理员')
+          showErrorMsg(errMsg || '您的账号已被封禁/禁用，请联系客服')
         } else {
           // 如果本来就没有token，或者是单纯的“未提供授权Token”，则静默处理（只打开登录弹窗）
           // 由于后端返回可能是 {"error": "未提供授权Token"} 或者是其它字符串，这里统一对 "未提供授权Token" 不做全局错误弹窗

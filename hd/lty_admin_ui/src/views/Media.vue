@@ -253,4 +253,40 @@ onMounted(() => {
   color: #409eff !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
 }
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .header-actions .el-radio-group {
+    margin-right: 0 !important;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .header-actions .el-button {
+    width: 100%;
+  }
+
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  
+  .image-wrapper {
+    height: 140px;
+  }
+}
 </style>

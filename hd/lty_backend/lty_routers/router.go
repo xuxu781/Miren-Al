@@ -297,6 +297,13 @@ func SetupRouter() http.Handler {
 		}
 		lty_middlewares.AdminAuth(lty_controllers.UpdateUser)(w, r)
 	})
+	mux.HandleFunc("/api/admin/users/status", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		lty_middlewares.AdminAuth(lty_controllers.UpdateUserStatus)(w, r)
+	})
 	mux.HandleFunc("/api/admin/users/delete", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
